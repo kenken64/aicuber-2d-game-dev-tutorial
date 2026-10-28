@@ -15,6 +15,9 @@ import { quizQuestionBank } from './quiz-question-bank.mjs';
 import { quizQuestionTranslations } from './quiz-question-translations.mjs';
 import { attachMultiplayerRooms } from './multiplayer-rooms.mjs';
 import { attachFinalGameRooms } from './final-game-rooms.mjs';
+import { createMarketplaceAuth } from './marketplace-auth.mjs';
+
+const marketplaceAuth = createMarketplaceAuth();
 
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectDirectory = path.resolve(appDirectory, "..");
@@ -580,13 +583,13 @@ async function getModules(learnerId = "") {
       m.level,
       m.duration_minutes AS durationMinutes,
       m.tag,
-      CASE WHEN m.slug = 'math-stem-physics-quiz' THEN COALESCE(lp.completed, FALSE)
+      CASE WHEN m.slug = 'math-stem-physics-quiz' OR $marketplace_auth THEN COALESCE(lp.completed, FALSE)
            ELSE COALESCE(lp.completed, p.completed, FALSE) END AS completed
     FROM modules m
     LEFT JOIN learner_progress lp ON lp.module_slug = m.slug AND lp.learner_id = $learner_id
     LEFT JOIN tutorial_progress p ON p.module_slug = m.slug
     ORDER BY m.level
-  `, { learner_id: learnerId });
+  `, { learner_id: learnerId, marketplace_auth: marketplaceAuth.enabled });
   const translationRows = await queryRows(`
     SELECT module_slug AS moduleSlug, locale, title, description
     FROM module_translations
@@ -673,7 +676,9 @@ async function readJson(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
   const body = Buffer.concat(chunks).toString("utf8");
-  return body ? JSON.parse(body) : {};
+  const payload = body ? JSON.parse(body) : {};
+  if (request.marketplaceLearnerId) payload.learnerId = request.marketplaceLearnerId;
+  return payload;
 }
 
 async function readAsset(request) {
@@ -972,10 +977,13 @@ async function serveStatic(request, response, pathname) {
         file = Buffer.from(html.replace(/<\/head>/i, `${themeAssets}</head>`));
       }
     }
+    if (marketplaceAuth.enabled && path.extname(filePath).toLowerCase() === '.html') {
+      file = Buffer.from(file.toString('utf8').replace(/<head\b[^>]*>/i, '$&<script src="/api/2ndbrain/session.js"></script>'));
+    }
     response.writeHead(200, {
       "content-type": contentType(filePath),
       "content-length": file.length,
-      "cache-control": "no-cache",
+      "cache-control": marketplaceAuth.enabled ? "no-store" : "no-cache",
     });
     if (request.method === "HEAD") response.end();
     else response.end(file);
@@ -1903,6 +1911,7 @@ async function handleApi(request, response, url) {
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
+    if (await marketplaceAuth.handle(request, response, url)) return;
     if (url.pathname.startsWith("/api/")) {
       await handleApi(request, response, url);
       return;
@@ -1916,8 +1925,8 @@ const server = createServer(async (request, response) => {
     sendJson(response, error.statusCode || 500, { error: error.message || "Internal server error." });
   }
 });
-attachMultiplayerRooms(server);
-attachFinalGameRooms(server);
+attachMultiplayerRooms(server, { authorizeUpgrade: marketplaceAuth.authorizeUpgrade });
+attachFinalGameRooms(server, { authorizeUpgrade: marketplaceAuth.authorizeUpgrade });
 
 await initializeDatabase();
 server.listen(port, "0.0.0.0", () => {

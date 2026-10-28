@@ -7,8 +7,8 @@ Godot Forge is an interactive 2D game development tutorial. Its 21 modules take 
 You need Node.js 20 or newer, npm, and an internet connection for the published artwork and audio.
 
 ```sh
-git clone https://github.com/kenken64/godot-forge-tutorial.git
-cd godot-forge-tutorial
+git clone https://github.com/kenken64/aicuber-2d-game-dev-tutorial.git
+cd aicuber-2d-game-dev-tutorial
 cp tutorial-web-app/.env.example tutorial-web-app/.env
 cd tutorial-web-app
 npm ci
@@ -47,6 +47,32 @@ From `tutorial-web-app/`:
 npm test
 npm run test:modules
 npm run test:storyline-voice
+npm run test:marketplace-auth
 ```
 
-The module browser test uses Chrome. Additional module-specific test commands are listed in [`tutorial-web-app/package.json`](tutorial-web-app/package.json).
+The module browser and marketplace authentication tests use Chrome. Additional module-specific test commands are listed in [`tutorial-web-app/package.json`](tutorial-web-app/package.json).
+
+## AI CUBER marketplace deployment
+
+The AI CUBER catalog item is `2d-game-dev-tutorial`, titled **2D Game Development Tutorial**, with the standard 10,000 AI credit monthly workflow price. Users install it in Marketplace and launch it from My Workflows. Deploy both this service and the corresponding catalog/launch configuration in `2ndBrain.ceo`.
+
+Create a separate Railway service from this repository, with the repository root as its root directory. `railway.json` installs the web app dependencies and starts the server on Railway's `PORT`. Use one replica and a persistent volume mounted at `/data`; set `APP_STORAGE_DIR=/data`. DuckDB supports this single-process deployment. Back up the volume to retain progress and generated assets. The service needs outbound access to the published DigitalOcean Spaces assets and AI CUBER's verification endpoint.
+
+Set these variables on the tutorial service:
+
+| Variable | Value |
+| --- | --- |
+| `MARKETPLACE_AUTH_REQUIRED` | `true` |
+| `APP_ORIGIN` | The tutorial's public HTTPS origin, without a trailing slash |
+| `GAME_DEV_TUTORIAL_SESSION_SECRET` | A random secret of at least 32 bytes, shared with AI CUBER |
+| `MARKETPLACE_LAUNCH_VERIFY_URL` | `https://YOUR-AICUBER-DOMAIN/api/marketplace/launch-session/verify` |
+| `MARKETPLACE_LAUNCH_VERIFY_SECRET` | The same secret of at least 32 bytes configured in AI CUBER |
+| `APP_STORAGE_DIR` | `/data` |
+
+On AI CUBER, set `GAME_DEV_TUTORIAL_URL=https://YOUR-TUTORIAL-DOMAIN/api/2ndbrain/launch`, the matching `GAME_DEV_TUTORIAL_SESSION_SECRET`, and `MARKETPLACE_LAUNCH_VERIFY_SECRET`. Generate secrets with `openssl rand -hex 32`; store them in service variables. Optional AI generation and cloud editor variables are listed in `tutorial-web-app/.env.example`; leave provisioning disabled unless its separate infrastructure is configured.
+
+Signed launch tokens are exchanged for an HttpOnly, SameSite=Lax session cookie and redirected to `/` to remove the token from the address bar. Cookies use Secure on HTTPS. Launch tokens can be exchanged once per running process; the replay cache resets on restart. Sessions last up to eight hours, retaining the original issue time for logout revocation. Each protected HTTP request verifies the account and installation with AI CUBER; verification failures deny access. Open pages recheck every minute and WebSockets every 30 seconds. `/api/health` remains public and returns only readiness in marketplace mode.
+
+Saved learner progress, checkpoints, quiz answers, and cloud workspace IDs use an account-derived ID enforced by the server. Existing generated-asset libraries remain shared among installed tutorial users; this integration does not make those libraries private. Browser multiplayer uses the session cookie. Exported native Godot clients and the separate cloud editor cannot join protected WebSockets without forwarding an authenticated cookie; their standalone multiplayer flow remains available outside marketplace mode.
+
+For standalone local use, leave `MARKETPLACE_AUTH_REQUIRED=false` and the session secret empty. Configuring a session secret enables authentication even if the flag is omitted. Incomplete marketplace configuration stops startup.

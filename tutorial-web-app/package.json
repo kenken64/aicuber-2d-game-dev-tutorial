@@ -17,6 +17,7 @@
     "test:storyline-browser": "node tests/storyline-browser.js",
     "test:credits-browser": "node tests/credits-browser.js",
     "test:marketplace-browser": "node tests/marketplace-browser.js",
+    "test:marketplace-auth": "node --test tests/marketplace-auth.test.js",
     "test:gamepad-recommendation": "node tests/gamepad-recommendation-browser.js",
     "test:final-game-walkthrough": "node tests/final-game-walkthrough-browser.js",
     "test:ending-browser": "node tests/ending-cutscene-browser.js",

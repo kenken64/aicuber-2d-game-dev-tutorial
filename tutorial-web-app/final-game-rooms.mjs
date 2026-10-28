@@ -3,7 +3,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 
 // A small two-peer relay for the Final Game Godot tutorial. The host simulates
 // the world; the relay only assigns a room code and forwards input/snapshots.
-export function attachFinalGameRooms(server) {
+export function attachFinalGameRooms(server, { authorizeUpgrade = async () => true } = {}) {
   const rooms = new Map();
   const wss = new WebSocketServer({ noServer: true, maxPayload: 16 * 1024, perMessageDeflate: false });
   const send = (socket, message) => {
@@ -67,13 +67,14 @@ export function attachFinalGameRooms(server) {
     }
   }
 
-  server.on('upgrade', (request, socket, head) => {
+  server.on('upgrade', async (request, socket, head) => {
     let pathname;
     try { pathname = new URL(request.url, `http://${request.headers.host}`).pathname; }
     catch { socket.destroy(); return; }
     if (pathname !== '/ws/final-game') return;
     // Godot runs on the separate cloud editor host, so its Origin differs from
     // the lesson site. Room codes and a two-player limit scope each session.
+    if (!await authorizeUpgrade(request, socket) || socket.destroyed) return;
     wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws));
   });
   wss.on('connection', socket => {

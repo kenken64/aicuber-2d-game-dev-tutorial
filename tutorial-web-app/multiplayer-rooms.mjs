@@ -6,7 +6,7 @@ const FLOOR_Y = 318;
 const COINS = [100, 170, 245, 320, 400, 475, 550, 620].map((x, id) => ({ id, x, y: FLOOR_Y - (id % 3 === 1 ? 96 : 36) }));
 const TICK_MS = 50;
 
-export function attachMultiplayerRooms(server) {
+export function attachMultiplayerRooms(server, { authorizeUpgrade = async () => true } = {}) {
   const rooms = new Map();
   const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
 
@@ -149,7 +149,7 @@ export function attachMultiplayerRooms(server) {
     }
   }
 
-  server.on('upgrade', (request, socket, head) => {
+  server.on('upgrade', async (request, socket, head) => {
     let pathname;
     try { pathname = new URL(request.url, `http://${request.headers.host}`).pathname; }
     catch { socket.destroy(); return; }
@@ -160,6 +160,7 @@ export function attachMultiplayerRooms(server) {
     try {
       if (request.headers.origin && new URL(request.headers.origin).host !== request.headers.host) { socket.destroy(); return; }
     } catch { socket.destroy(); return; }
+    if (!await authorizeUpgrade(request, socket) || socket.destroyed) return;
     wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request));
   });
   wss.on('connection', ws => {
