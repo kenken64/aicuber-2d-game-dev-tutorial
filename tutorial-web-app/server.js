@@ -326,6 +326,18 @@ const modules = [
       ms: { title: "Permainan akhir", description: "Gunakan aset dan sistem modul 1–18 untuk membina dan menguji satu tahap Godot yang lengkap." },
     },
   },
+  {
+    slug: "microbit-gamepad",
+    title: "micro:bit DIY Bluetooth Gamepad",
+    description: "Turn a Joystick:bit V2 into a wireless controller with MakeCode blocks and Bluetooth UART.",
+    level: 22,
+    durationMinutes: 40,
+    tag: "INPUT",
+    translations: {
+      zh: { title: "micro:bit 自制蓝牙游戏手柄", description: "使用 MakeCode 积木和蓝牙 UART 将 Joystick:bit V2 变成无线控制器。" },
+      ms: { title: "Pad Permainan Bluetooth DIY micro:bit", description: "Jadikan Joystick:bit V2 pengawal wayarles menggunakan blok MakeCode dan Bluetooth UART." },
+    },
+  },
 ];
 
 let database;

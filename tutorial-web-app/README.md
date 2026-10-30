@@ -27,6 +27,7 @@ The `tutorial-web-app` folder is the landing page and API server for the 2D game
 - `math-stem-physics-quiz` — 40-question maths, physics, game-systems, and computer-game-history quiz
 - `setup-godot-with-ai` — Learn Godot Web Editor: a six-step illustrated walkthrough with an embedded, server-run Godot workspace and a separate-tab launch button
 - `final-game` — a Godot starter project ZIP containing the published lesson artwork and animation coordinates, with a link to the cloud editor lesson
+- `microbit-gamepad` — a MakeCode and Bluetooth UART lesson for building a Joystick:bit V2 controller
 
 ## Persistence model
 

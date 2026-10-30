@@ -17,3 +17,5 @@ final-game/dist
 *.gif
 *.mp3
 *.mp4
+
+!microbit-gamepad/images/joystick-bit-v2.png

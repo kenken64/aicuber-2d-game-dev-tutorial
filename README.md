@@ -1,6 +1,6 @@
 # Godot Forge
 
-Godot Forge is an interactive 2D game development tutorial. Its 21 modules take learners from character and asset creation through game systems, a physics quiz, and a final game. Lessons include playable Phaser demos, saved progress, and English, Simplified Chinese, and Malay text.
+Godot Forge is an interactive 2D game development tutorial. Its 22 modules take learners from character and asset creation through game systems, a physics quiz, and a final game. Lessons include playable Phaser demos, saved progress, and English, Simplified Chinese, and Malay text.
 
 ## Run locally
 
@@ -21,7 +21,7 @@ Text and design requests use the optional [Codex CLI proxy](ollama-api-proxy/REA
 
 ## Modules and project layout
 
-The [web app](tutorial-web-app/README.md) serves the landing page, API, and 21 modules. The sibling module folders contain lessons for character and asset creation, storyline and tilemap design, spawning and AI, controls and physics, achievements and leaderboards, local and online multiplayer, the final cutscene, credits, a quiz, Godot setup, and the final game. See the web app README for the full module list and API details.
+The [web app](tutorial-web-app/README.md) serves the landing page, API, and 22 modules. The sibling module folders contain lessons for character and asset creation, storyline and tilemap design, spawning and AI, controls and physics, achievements and leaderboards, local and online multiplayer, the final cutscene, credits, a quiz, Godot setup, and the final game. See the web app README for the full module list and API details.
 
 | Path | Purpose |
 | --- | --- |

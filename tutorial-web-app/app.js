@@ -26,6 +26,7 @@ const moduleOrder = [
   "math-stem-physics-quiz",
   "setup-godot-with-ai",
   "final-game",
+  "microbit-gamepad",
 ];
 
 const moduleIcons = {
@@ -48,6 +49,7 @@ const moduleIcons = {
   "local-coop": "♧",
   "multiplayer-game": "⇄",
   "final-game": "✦",
+  "microbit-gamepad": "🎮",
   "math-stem-physics-quiz": "π",
   "setup-godot-with-ai": "⚒",
 };
@@ -359,7 +361,7 @@ function renderNavigation() {
     .map(
       (module) => {
         const copy = moduleCopy(module);
-        const destination = ["character-creation", "game-assets-creation", "boss-creation", "storyline-engine", "parallax-tiling-map", "items-spawning", "game-loop-engine", "game-controls", "game-settings", "game-physics", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "math-stem-physics-quiz", "setup-godot-with-ai", "enemies-ai", "final-game"].includes(module.slug) ? modulePath(module) : `#module-${module.slug}`;
+        const destination = ["character-creation", "game-assets-creation", "boss-creation", "storyline-engine", "parallax-tiling-map", "items-spawning", "game-loop-engine", "game-controls", "game-settings", "game-physics", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "math-stem-physics-quiz", "setup-godot-with-ai", "enemies-ai", "final-game", "microbit-gamepad"].includes(module.slug) ? modulePath(module) : `#module-${module.slug}`;
         return `
         <a class="nav-item ${completedModules.has(module.slug) ? "completed" : ""}" href="${destination}">
           <span class="nav-number">${String(moduleLevel(module)).padStart(2, "0")}</span>
@@ -389,7 +391,7 @@ function renderCards(query = "") {
             <span class="module-index">${interfaceCopy[currentLocale].chapter} ${String(moduleLevel(module)).padStart(2, "0")}</span>
             <span class="module-state">${localizeTag(module.tag)}</span>
           </div>
-          <span class="module-icon" aria-hidden="true"><span class="module-icon-fallback">${moduleIcons[module.slug] || "✦"}</span><img src="https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/tutorial-web-app/images/module-icons/${module.slug}.webp" alt="" width="112" height="112" loading="lazy" decoding="async" /></span>
+          <span class="module-icon" aria-hidden="true"><span class="module-icon-fallback">${moduleIcons[module.slug] || "✦"}</span><img src="${module.slug === "microbit-gamepad" ? "/microbit-gamepad/images/joystick-bit-v2.png" : `https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/tutorial-web-app/images/module-icons/${module.slug}.webp`}" alt="" width="112" height="112" loading="lazy" decoding="async" /></span>
           <h3>${copy.title}</h3>
           <p>${copy.description}</p>
           <div class="module-meta"><span>↳ ${module.durationMinutes} ${interfaceCopy[currentLocale].minutes}</span><span>● ${complete ? interfaceCopy[currentLocale].done : interfaceCopy[currentLocale].ready}</span></div>

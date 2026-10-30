@@ -45,3 +45,6 @@ final-game/dist/
 .env
 .env.*
 !.env.example
+
+# Product photo used by the micro:bit lesson.
+!microbit-gamepad/images/joystick-bit-v2.png
