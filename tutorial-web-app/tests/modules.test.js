@@ -202,10 +202,27 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     assert.equal(bossManifest.kind, 'boss');
     assert.deepEqual(bossManifest.animations.map(row => row.frames.length), [1, 4, 4, 4, 4, 4, 4]);
     assert.deepEqual(bossManifest.unavailable, []);
+    await page.route('https://makecode.microbit.org/?controller=1&ws=browser&noproject=1', route => route.fulfill({
+      contentType: 'text/html', body: `<script>
+        window.addEventListener('message', event => {
+          if (event.data.type !== 'pxteditor') return;
+          if (event.data.action === 'importproject') window.importedProject = event.data.project;
+          parent.postMessage({type:'pxteditor', id:event.data.id, success:true}, '*');
+        });
+        parent.postMessage({type:'iframeclientready'}, '*');
+      </script>`
+    }));
     await page.goto(`${server.url}/microbit-gamepad/`);
     await page.locator('#complete:not([disabled])').waitFor();
     assert.equal(await page.locator('.hero img').evaluate(image => image.complete && image.naturalWidth > 0), true);
     assert.match(await page.locator('#program-code').textContent(), /bluetooth\.startUartService/);
+    await page.click('#load-editor');
+    await page.waitForFunction(() => document.querySelector('#editor-status').textContent.includes('Starter project loaded'));
+    const editor = page.frames().find(frame => frame.url().startsWith('https://makecode.microbit.org/'));
+    const importedProject = await editor.evaluate(() => window.importedProject);
+    assert.match(importedProject.text['main.ts'], /bluetooth\.startUartService/);
+    assert.equal(JSON.parse(importedProject.text['pxt.json']).dependencies.bluetooth, '*');
+
     await page.click('#complete');
     await page.waitForFunction(() => document.querySelector('#complete').textContent === 'Reopen lesson');
     await page.reload();

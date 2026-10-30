@@ -17,7 +17,7 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000). The tutorial and its playable modules can run without configuring AI services. To use image generation and storyline voice generation, set `OPENAI_API_KEY` in `tutorial-web-app/.env` and restart the app.
 
-Text and design requests use the optional [Codex CLI proxy](ollama-api-proxy/README.md). Start it separately from `ollama-api-proxy/` after installing and authenticating the Codex CLI. The app expects it at `http://127.0.0.1:8788` by default; change `OLLAMA_PROXY_URL` in the app's `.env` if needed.
+For text and design requests, set `OPENROUTER_API_KEY` and optionally `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`) in `tutorial-web-app/.env` or Railway service variables. The server calls OpenRouter directly. Image and voice generation still use `OPENAI_API_KEY`.
 
 ## Modules and project layout
 
@@ -27,7 +27,6 @@ The [web app](tutorial-web-app/README.md) serves the landing page, API, and 22 m
 | --- | --- |
 | [`tutorial-web-app/`](tutorial-web-app/) | Landing page, Node server, DuckDB persistence, and tests |
 | Module folders such as [`character-creation/`](character-creation/) and [`parallax-tiling-map/`](parallax-tiling-map/) | Individual lesson pages and game demos |
-| [`ollama-api-proxy/`](ollama-api-proxy/) | Optional Ollama-compatible interface to Codex CLI |
 | [`upload_spaces_assets.py`](upload_spaces_assets.py) | Incremental DigitalOcean Spaces media upload |
 | [`SPACES_PUBLIC_URLS.json`](SPACES_PUBLIC_URLS.json) | Public URL manifest read by the server |
 

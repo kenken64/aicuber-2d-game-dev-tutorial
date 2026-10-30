@@ -58,7 +58,7 @@ The API currently exposes:
 - `POST /api/godot/session` with `{ "learnerId": "..." }` — start or resume that learner's server-side Godot workspace and return its embedded and download URLs.
 - `POST /api/godot/stop` with `{ "learnerId": "..." }` — stop that learner's editor container while preserving their project files.
 - `GET /api/modules?learnerId=...` — module metadata and that learner's saved progress.
-- `POST /api/chat` — forward text/design requests to the server-configured Ollama-compatible proxy.
+- `POST /api/chat` — send text/design requests directly to OpenRouter.
 - `PATCH /api/modules/:slug/progress` with `{ "learnerId": "...", "completed": true }` — save that learner's progress. For the chapter 18 quiz, the server first verifies a passing score from saved graded answers.
 - `POST /api/modules/:slug/reset` with `{ "learnerId": "..." }` — clear that learner's saved module checkpoint and mark the module incomplete. Generated artwork, saved characters, and Final Game exports remain available. The UI requires a second click to confirm and does not call an AI model.
 - `GET /api/quizzes/math-stem-physics-quiz?locale=en|zh|ms` — return the 40 categorized DuckDB questions without answer keys in the requested language. The UI shows 10 questions per page and keeps the current page in a learner checkpoint.
@@ -87,21 +87,12 @@ npm start
 
 Then open `http://localhost:3000`. The module links intentionally point to each sibling folder, so those folders can later receive their own `index.html` tutorial pages.
 
-For the **Build character + sprite** and other AI design actions, start the local [Codex proxy](../ollama-api-proxy/README.md) in a second terminal before using them:
-
-```sh
-cd ../ollama-api-proxy
-npm start
-```
-
-The proxy must answer at `http://127.0.0.1:8788/health` when `OLLAMA_PROXY_URL` uses the default address. The app's own `npm start` does not start that companion process.
+For AI text and design actions, set `OPENROUTER_API_KEY` in `.env` (or Railway service variables). The server uses `OPENROUTER_MODEL`, default `openai/gpt-4o-mini`, and keeps the key private. Restart or redeploy after changing the variables.
 
 The app includes client-side search, English/Chinese/Malay translation switching, a time-based light/dark theme toggle, mobile navigation, and progress tracking persisted through the DuckDB API.
 
 Storyline Engine loads Phaser 3 locally from the installed `phaser` dependency. Its three outcome backgrounds and fallback explorer/guardian figures were generated with the configured GPT Image 2.5 model, then optimized into `storyline-engine/images/*-stage.webp` by `node scripts/prepare-story-art.mjs`. It previews published character and boss sheets using their companion coordinates JSON, falling back to the generated demo figures until suitable assets are saved. Story choices and the current beat are checkpointed per learner, so a refresh resumes the example without generating images again.
 The explorer and guardian exchange choice-sensitive lines in a GPT Image 2.5-generated speech bubble. Text is rendered separately in Phaser and repeated in accessible HTML controls, with English, Simplified Chinese, and Malay dialogue. The current conversation line is saved in the learner checkpoint. The page displays the exact artwork prompts plus Chinese and Malay learning translations. With `OPENAI_API_KEY`, character dialogue uses OpenAI `gpt-4o-mini-tts` voices; MP3 files are cached under `storage/story-voices`, so replaying a generated line does not call the API again. The page discloses that these voices are AI-generated.
-
-Set `OLLAMA_PROXY_URL` in `tutorial-web-app/.env` to the Ollama-compatible Codex proxy address (default `http://127.0.0.1:8788`). If that proxy uses `PROXY_API_KEY`, set the same value as `OLLAMA_PROXY_API_KEY` here. Character, boss, and asset creation send text/design requests through this server; students do not enter or see the proxy URL. Restart the tutorial server after changing `.env`.
 
 For Character Creation, Game Asset Creation, Boss Creation image generation, and Storyline Engine voice playback, set `OPENAI_API_KEY` in the same `.env`. The default image model is `gpt-image-2.5-sunburst`; the default voice model is `gpt-4o-mini-tts` and can be changed with `OPENAI_TTS_MODEL`. `npm start` and `npm run dev` load `.env` automatically. The quiz is chapter 19, followed by Learn Godot Web Editor at chapter 20 and Final Game at chapter 21. Its New Attempt button clears saved answers and pass status for unlimited retries.
 

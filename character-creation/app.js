@@ -18,7 +18,7 @@ const copy = {
     introCopy: "Start with your own imagination. Codex will help shape it into a playable character, then we will turn the design into an animated sprite sheet.",
     introNote: "PROMPT / SPRITE / MOTION",
     creativeBriefTitle: "START WITH YOUR IDEA",
-    proxyBadge: "CODEX VIA PROXY",
+    proxyBadge: "OPENROUTER",
     creativePromptLabel: "Describe the character you imagine",
     creativePromptPlaceholder: "A tiny storm keeper who collects thunder in glass bottles...",
     templateLabel: "Quick test template",
@@ -108,7 +108,7 @@ const copy = {
     deadState: "DEFEATED",
     building: "Codex is shaping your character...",
     spriteBuilding: "Generating transparent sprite artwork...",
-    proxyError: "The proxy could not answer. Start it with npm start, then try again.",
+    proxyError: "The AI service could not answer. Check the server configuration and try again.",
     invalidAi: "Codex returned an unexpected format. Try the request again.",
     steps: [
       { field: "role", prompt: "What is your character's role or class in the game? Choose one, combine classes, or write your own.", choices: ["Warrior", "Rogue", "Ranger", "Mage", "Healer", "Tank", "Summoner", "Engineer"] },
@@ -136,7 +136,7 @@ const copy = {
     introCopy: "先从你的想象开始。Codex 会帮助你把它塑造成可玩的角色，然后将设计转换成可以动画化的精灵表。",
     introNote: "提示 / 精灵表 / 动作",
     creativeBriefTitle: "从你的创意开始",
-    proxyBadge: "通过代理连接 CODEX",
+    proxyBadge: "OPENROUTER",
     creativePromptLabel: "描述你想象中的角色",
     creativePromptPlaceholder: "一个把雷声收集在玻璃瓶里的小小风暴守护者……",
     templateLabel: "快速测试模板",
@@ -226,7 +226,7 @@ const copy = {
     deadState: "已倒下",
     building: "Codex 正在塑造你的角色……",
     spriteBuilding: "正在生成透明精灵图素材……",
-    proxyError: "代理没有响应。请用 npm start 启动代理后重试。",
+    proxyError: "AI 服务没有响应。请检查服务器配置后重试。",
     invalidAi: "Codex 返回了无法识别的格式。请重新请求。",
     steps: [
       { field: "role", prompt: "你的角色在游戏中的定位或职业是什么？可以选择、组合职业，也可以自己填写。", choices: ["战士", "盗贼", "游侠", "法师", "治疗者", "坦克", "召唤师", "工程师"] },
@@ -254,7 +254,7 @@ const copy = {
     introCopy: "Mulakan dengan imaginasi anda. Codex membantu membentuknya menjadi watak yang boleh dimainkan, kemudian menukarkan reka bentuk itu kepada helaian sprite beranimasi.",
     introNote: "PROMPT / SPRITE / PERGERAKAN",
     creativeBriefTitle: "MULAKAN DENGAN IDEA ANDA",
-    proxyBadge: "CODEX MELALUI PROKSI",
+    proxyBadge: "OPENROUTER",
     creativePromptLabel: "Terangkan watak yang anda bayangkan",
     creativePromptPlaceholder: "Penjaga ribut kecil yang mengumpul guruh dalam botol kaca...",
     templateLabel: "Templat ujian pantas",
@@ -344,7 +344,7 @@ const copy = {
     deadState: "TEWAS",
     building: "Codex sedang membentuk watak anda...",
     spriteBuilding: "Menjana karya sprite lutsinar...",
-    proxyError: "Proksi tidak menjawab. Mulakannya dengan npm start, kemudian cuba lagi.",
+    proxyError: "Perkhidmatan AI tidak menjawab. Semak konfigurasi pelayan dan cuba lagi.",
     invalidAi: "Codex mengembalikan format yang tidak dijangka. Cuba permintaan sekali lagi.",
     steps: [
       { field: "role", prompt: "Apakah peranan atau kelas watak anda dalam permainan? Pilih, gabungkan kelas atau tulis idea sendiri.", choices: ["Pahlawan", "Penyangak", "Renjer", "Ahli sihir", "Penyembuh", "Tank", "Pemanggil", "Jurutera"] },
@@ -785,11 +785,11 @@ function parseStructuredResponse(text) {
   }
 }
 
-async function callProxy(messages) {
+async function callTextModel(messages) {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model: "gpt-5.6-luna", stream: false, messages }),
+    body: JSON.stringify({ messages }),
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error?.message || payload.error || currentCopy().proxyError);
@@ -1024,7 +1024,7 @@ async function buildCharacter() {
   designStatus.textContent = currentCopy().building;
   saveStatus.textContent = "";
   try {
-    const response = await callProxy([
+    const response = await callTextModel([
       { role: "system", content: "You are a patient 2D game design mentor. Preserve student creativity, make the result concrete, and follow the requested JSON format exactly." },
       { role: "user", content: characterDesignPrompt() },
     ]);
@@ -1070,7 +1070,7 @@ async function createSpriteSheet(fromBuild = false) {
   createSpriteButton.disabled = true;
   spriteStatus.textContent = currentCopy().spriteBuilding;
   try {
-    const response = await callProxy([
+    const response = await callTextModel([
       { role: "system", content: "You are a 2D animation mentor. Return only valid JSON and keep the requested keys stable." },
       { role: "user", content: buildPromptForSpriteSheet() },
     ]);

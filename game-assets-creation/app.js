@@ -274,9 +274,9 @@ async function buildDirection() {
   setBusy(true, "Building a consistent asset direction…");
   directionStatus.textContent = "BUILDING";
   try {
-    const response = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ model: "gpt-5.6-luna", stream: false, messages: [{ role: "user", content: directionPrompt() }] }) });
+    const response = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: [{ role: "user", content: directionPrompt() }] }) });
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok || !payload.message?.content) throw new Error(payload.error?.message || payload.error || "Could not reach the configured Codex proxy. Check OLLAMA_PROXY_URL in tutorial-web-app/.env and make sure it is running.");
+    if (!response.ok || !payload.message?.content) throw new Error(payload.error?.message || payload.error || "The AI service could not answer. Check the server configuration and try again.");
     direction = normaliseDirection(parseJson(payload.message.content));
     directionStatus.textContent = "READY";
     productionWorkspace.hidden = false;

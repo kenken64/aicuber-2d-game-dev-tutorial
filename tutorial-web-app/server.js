@@ -71,7 +71,9 @@ const openAiApiBase = (process.env.OPENAI_API_BASE || "https://api.openai.com/v1
 const openAiImageModel = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2.5-sunburst";
 const openAiTtsModel = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
 const storyVoiceRequests = new Map();
-const ollamaProxyUrl = (process.env.OLLAMA_PROXY_URL || "http://127.0.0.1:8788").replace(/\/+$/, "");
+const openRouterApiKey = process.env.OPENROUTER_API_KEY || "";
+const openRouterApiBase = (process.env.OPENROUTER_API_BASE || "https://openrouter.ai/api/v1").replace(/\/+$/, "");
+const openRouterModel = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
 
 const modules = [
   {
@@ -1455,23 +1457,34 @@ async function handleApi(request, response, url) {
   }
   if (request.method === "POST" && url.pathname === "/api/chat") {
     const body = await readJson(request);
+    if (!openRouterApiKey) return sendJson(response, 503, { error: "OpenRouter is not configured. Set OPENROUTER_API_KEY on the tutorial server." });
+    if (!Array.isArray(body.messages) || !body.messages.length || body.messages.some(message =>
+      !message || !["system", "user", "assistant"].includes(message.role) || typeof message.content !== "string")) {
+      return sendJson(response, 400, { error: "A valid chat conversation is required." });
+    }
     let upstream;
     try {
-      upstream = await fetch(`${ollamaProxyUrl}/api/chat`, {
+      upstream = await fetch(`${openRouterApiBase}/chat/completions`, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(process.env.OLLAMA_PROXY_API_KEY ? { authorization: `Bearer ${process.env.OLLAMA_PROXY_API_KEY}` } : {}),
-        },
-        body: JSON.stringify(body),
+        headers: { "content-type": "application/json", authorization: `Bearer ${openRouterApiKey}` },
+        body: JSON.stringify({ model: openRouterModel, messages: body.messages.map(({ role, content }) => ({ role, content })), stream: false }),
         signal: AbortSignal.timeout(300000),
       });
     } catch {
-      return sendJson(response, 502, { error: "Could not reach the configured Ollama proxy. Check OLLAMA_PROXY_URL in tutorial-web-app/.env and make sure the proxy is running." });
+      return sendJson(response, 502, { error: "Could not reach OpenRouter. Check the server's network connection and OpenRouter configuration." });
+    }
+    if (!upstream.ok) {
+      const detail = upstream.status === 401 || upstream.status === 403 ? "Check OPENROUTER_API_KEY and its permissions."
+        : upstream.status === 402 ? "Check your OpenRouter credits."
+        : upstream.status === 429 ? "OpenRouter rate limit reached; try again later."
+        : "Check the configured OPENROUTER_MODEL and OpenRouter service status.";
+      return sendJson(response, upstream.status === 429 ? 429 : 502, { error: `OpenRouter request failed (${upstream.status}). ${detail}` });
     }
     const payload = await upstream.json().catch(() => null);
-    if (!payload) return sendJson(response, 502, { error: "The configured Ollama proxy returned an invalid response." });
-    return sendJson(response, upstream.status, payload);
+    const content = payload?.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || !content.trim()) return sendJson(response, 502, { error: "OpenRouter returned an empty or invalid response." });
+    return sendJson(response, 200, { model: payload.model || openRouterModel, message: { role: "assistant", content }, done: true });
+
   }
   if (request.method === 'POST' && url.pathname === '/api/bosses/repair') {
     return sendJson(response, 200, await repairSavedBoss(await readJson(request)));

@@ -30,7 +30,7 @@
     "test:leaderboard-browser": "node tests/leaderboard-browser.js",
     "test:local-coop-browser": "node tests/local-coop-browser.js",
     "test:multiplayer-browser": "node tests/multiplayer-browser.js",
-    "test:proxy": "node --test tests/proxy.test.js",
+    "test:chat": "node --test tests/chat.test.js",
     "test:modules": "node --test tests/modules.test.js"
   },
   "engines": {
