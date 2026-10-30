@@ -38,6 +38,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
   let server = await startServer(storage);
   let browser;
   try {
+    assert.equal((await (await fetch(`${server.url}/api/image/config`)).json()).configured, false);
     const modules = await (await fetch(`${server.url}/api/modules`)).json();
     assert.equal(modules.length, 22);
     const quizQuestions = await (await fetch(`${server.url}/api/quizzes/math-stem-physics-quiz`)).json();

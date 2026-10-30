@@ -62,14 +62,19 @@ let checkpointReady = false;
 let replacementConfirmTimer = null;
 
 async function checkGenerationReadiness() {
-  const response = await fetch("/api/health").catch(() => null);
-  const health = response?.ok ? await response.json().catch(() => ({})) : {};
-  imageGenerationAvailable = health.imageGenerationConfigured === true;
-  if (imageGenerationAvailable) {
-    generationReadiness.textContent = `GPT Image ready (${health.imageModel || "configured model"}). Build a direction, then generate one category at a time.`;
+  const response = await fetch("/api/image/config").catch(() => null);
+  const config = response?.ok ? await response.json().catch(() => null) : null;
+  if (!config || typeof config.configured !== "boolean") {
+    imageGenerationAvailable = null;
+    generationReadiness.textContent = "Could not check image generation. Refresh the page or try generating an asset.";
+    generationReadiness.dataset.status = "warning";
+  } else if (config.configured) {
+    imageGenerationAvailable = true;
+    generationReadiness.textContent = `GPT Image ready (${config.model || "configured model"}). Build a direction, then generate one category at a time.`;
     generationReadiness.dataset.status = "ready";
   } else {
-    generationReadiness.textContent = "GPT Image is unavailable. Add OPENAI_API_KEY to tutorial-web-app/.env, then restart the tutorial server.";
+    imageGenerationAvailable = false;
+    generationReadiness.textContent = "GPT Image is unavailable. Set OPENAI_API_KEY in the server environment (Railway variables or tutorial-web-app/.env), then restart or redeploy.";
     generationReadiness.dataset.status = "warning";
   }
 }
@@ -301,7 +306,7 @@ function selectCategory(category) {
 async function generateAsset() {
   if (!direction || busy) return;
   if (imageGenerationAvailable === false) {
-    generationStatus.textContent = "GPT Image is unavailable. Add OPENAI_API_KEY to tutorial-web-app/.env, then restart the tutorial server.";
+    generationStatus.textContent = "GPT Image is unavailable. Set OPENAI_API_KEY in the server environment (Railway variables or tutorial-web-app/.env), then restart or redeploy.";
     return;
   }
   if (generatedAssets[selectedCategory]) {

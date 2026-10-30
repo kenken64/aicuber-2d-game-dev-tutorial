@@ -47,7 +47,7 @@ test('real server launch, account progress, revocation, and WebSocket access', {
   await new Promise(resolve => reservation.close(resolve));
   const child = spawn(process.execPath, ['server.js'], {
     cwd: new URL('..', import.meta.url),
-    env: { ...process.env, PORT: String(appPort), APP_STORAGE_DIR: storage, MARKETPLACE_AUTH_REQUIRED: 'true',
+    env: { ...process.env, PORT: String(appPort), APP_STORAGE_DIR: storage, OPENAI_API_KEY: 'image-test-key', OPENAI_IMAGE_MODEL: 'test-image-model', MARKETPLACE_AUTH_REQUIRED: 'true',
       APP_ORIGIN: `http://127.0.0.1:${appPort}`, GAME_DEV_TUTORIAL_SESSION_SECRET: secret,
       MARKETPLACE_LAUNCH_VERIFY_SECRET: secret,
       MARKETPLACE_LAUNCH_VERIFY_URL: `http://127.0.0.1:${verifier.address().port}/verify` },
@@ -70,7 +70,7 @@ test('real server launch, account progress, revocation, and WebSocket access', {
     const launch = c => get(`/api/2ndbrain/launch?launch_token=${encodeURIComponent(token(c))}`);
     const health = await get('/api/health');
     assert.deepEqual(await health.json(), { ok: true });
-    for (const path of ['/', '/api/modules', '/character-creation/', '/app.js', '/api/2ndbrain/session.js']) assert.equal((await get(path)).status, 401);
+    for (const path of ['/', '/api/modules', '/api/image/config', '/character-creation/', '/app.js', '/api/2ndbrain/session.js']) assert.equal((await get(path)).status, 401);
     for (const c of [ { ...claims(), tool_id: 'meeting-minutes' }, { ...claims(), exp: 1 }, { ...claims(), iat: Math.floor(Date.now() / 1000) + 60 }, { ...claims(), user_id: '' }, { ...claims(), purpose: 'session' } ]) assert.equal((await launch(c)).status, 401);
     assert.equal((await get(`/api/2ndbrain/launch?launch_token=${token(claims(), 'wrong-secret')}`)).status, 401);
     const alice = claims();
@@ -80,6 +80,7 @@ test('real server launch, account progress, revocation, and WebSocket access', {
     assert.equal(launched.headers.get('referrer-policy'), 'no-referrer');
     assert.match(launched.headers.get('set-cookie'), /HttpOnly; SameSite=Lax/);
     const aliceCookie = launched.headers.get('set-cookie').split(';')[0];
+    assert.deepEqual(await (await get('/api/image/config', aliceCookie)).json(), { configured: true, model: 'test-image-model' });
     assert.equal((await launch(alice)).status, 401, 'a launch token cannot be exchanged twice');
     assert.equal((await get('/api/modules', aliceCookie.replace(/.$/, 'x'))).status, 401);
     assert.equal((await get('/', aliceCookie, { headers: { origin: 'https://other.example' } })).status, 403);
@@ -116,6 +117,9 @@ test('real server launch, account progress, revocation, and WebSocket access', {
       assert.equal(page.url(), base + '/');
       assert.equal(await page.evaluate(() => localStorage.getItem('godot-forge-learner-id')), createHash('sha256').update('browser-user').digest('hex'));
       assert.equal(await page.evaluate(async () => (await fetch('/api/modules/game-controls/progress', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ completed: true }) })).status), 200, 'browser requests work with the public origin');
+      await page.goto(`${base}/game-assets-creation/`);
+      await page.waitForFunction(() => document.querySelector('#generation-readiness')?.dataset.status === 'ready');
+      assert.match(await page.locator('#generation-readiness').textContent(), /test-image-model/);
       await page.goto(`${base}/game-controls/`);
       assert.equal(await page.evaluate(() => localStorage.getItem('godot-forge-learner-id')), createHash('sha256').update('browser-user').digest('hex'));
     } finally { await browser.close(); }

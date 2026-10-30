@@ -1505,6 +1505,9 @@ async function handleApi(request, response, url) {
     const keys = url.searchParams.get("rows") === "4" ? ['idle', 'walk', 'attack', 'phase'] : bossRows;
     return sendJson(response, 200, inspectBossLayout(data, info.width, info.height, keys));
   }
+  if (request.method === "GET" && url.pathname === "/api/image/config") {
+    return sendJson(response, 200, { configured: Boolean(openAiApiKey), model: openAiImageModel });
+  }
   if (request.method === "GET" && url.pathname === "/api/health") {
     return sendJson(response, 200, {
       ok: true,

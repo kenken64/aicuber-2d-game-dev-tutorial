@@ -66,6 +66,7 @@ The API currently exposes:
 - `POST /api/assets?module=character-creation` with the file bytes and an `x-file-name` header — save an asset file and its DuckDB metadata.
 - `GET /api/assets/:storedName` — serve a stored asset from the configured asset volume.
 - `POST /api/sprites/generate` with a character design — generate a transparent 8-by-7 sprite sheet with a separate pose-guided, eight-frame walk/run pass, store it in the asset volume, and return its metadata. The same rules apply to templates and custom briefs; see [locomotion v2](../character-creation/data/locomotion-v2.md).
+- `GET /api/image/config` — report image-generation readiness and the configured model, without exposing the API key.
 - `POST /api/assets/generate` with an asset-pack brief and `tileset`, `props`, `pickups`, or `ui` category — generate and store a transparent, 4-by-4 category sheet for Game Assets Creation.
 - `POST /api/bosses/generate` with a completed boss direction — generate and store a transparent, full-body boss concept with an imposing silhouette and phase-readability cues.
 - `POST /api/characters` with a completed character profile and sprite sheet — save the character, mark Character Creation complete, and publish its sprite sheet and coordinates JSON to the persistent `assets/final-game/` library.
