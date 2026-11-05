@@ -39,12 +39,24 @@ try {
     for (const scene of ['grove-bridge', 'canopy-leap', 'heart-tree', 'boar-charge', 'guardian-encounter', 'crystal-spring']) {
       assert.equal((await page.request.get(`${baseUrl}/credits/images/${scene}.webp`)).status(), 200);
     }
-    assert.equal(await page.locator('#complete-module').isDisabled(), true);
+    assert.equal(await page.locator('#complete-module').isEnabled(), true);
+    assert.equal(await page.locator('#complete-module').evaluate(button => Boolean(button.closest('.completion-row').compareDocumentPosition(document.querySelector('#credits-stage')) & Node.DOCUMENT_POSITION_FOLLOWING)), true);
     await page.locator('#game-screenshot').evaluate(image => image.decode());
     const firstScene = await page.locator('#game-screenshot').getAttribute('src');
     await page.click('#next-screenshot');
     await page.waitForFunction(previous => document.querySelector('#game-screenshot').getAttribute('src') !== previous, firstScene);
     const learnerId = await page.evaluate(() => localStorage.getItem('godot-forge-learner-id'));
+    await page.click('#complete-module');
+    await page.waitForFunction(async id => {
+      const modules = await (await fetch(`/api/modules?learnerId=${encodeURIComponent(id)}`)).json();
+      return modules.find(module => module.slug === 'credits')?.completed === true;
+    }, learnerId);
+    await page.waitForFunction(() => document.querySelector('#complete-module').textContent === 'REOPEN MODULE');
+    await page.click('#complete-module');
+    await page.waitForFunction(async id => {
+      const modules = await (await fetch(`/api/modules?learnerId=${encodeURIComponent(id)}`)).json();
+      return modules.find(module => module.slug === 'credits')?.completed === false;
+    }, learnerId);
     await page.click('#skip-roll');
     await page.waitForFunction(async id => {
       const modules = await (await fetch(`/api/modules?learnerId=${encodeURIComponent(id)}`)).json();

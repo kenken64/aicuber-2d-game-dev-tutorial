@@ -3,6 +3,11 @@ const overviewCopy = {
   zh: { back: "← 学习路径", language: "语言", topics: "计划学习内容", notice: "本模块概览已就绪，互动课程将在后续添加。", openEditor: "打开 Godot 网页编辑器 ↗", complete: "标记完成", reopen: "重新打开模块", saved: "进度已保存。", error: "无法加载或保存本模块，请刷新后重试。", chapter: (n, minutes) => `第 ${String(n).padStart(2, "0")} 章 · ${minutes} 分钟` },
   ms: { back: "← Laluan pembelajaran", language: "Bahasa", topics: "Topik yang dirancang", notice: "Gambaran keseluruhan modul ini tersedia. Pelajaran interaktif akan ditambah kemudian.", openEditor: "Buka Godot Web Editor ↗", complete: "Tanda selesai", reopen: "Buka semula modul", saved: "Kemajuan disimpan.", error: "Modul ini tidak dapat dimuatkan atau disimpan. Sila muat semula dan cuba lagi.", chapter: (n, minutes) => `BAB ${String(n).padStart(2, "0")} · ${minutes} min` },
 };
+const marketplaceCompletionCopy = {
+  en: { ready: "Mark this lesson complete when you are ready.", done: "Marketplace System completed.", complete: "COMPLETE MODULE", reopen: "REOPEN MODULE" },
+  zh: { ready: "准备好后，可将本课程标记为完成。", done: "游戏商店系统模块已完成。", complete: "完成模块", reopen: "重新打开模块" },
+  ms: { ready: "Tandakan pelajaran ini selesai apabila anda bersedia.", done: "Modul Sistem Pasaran telah selesai.", complete: "SELESAIKAN MODUL", reopen: "BUKA SEMULA MODUL" },
+};
 const plannedTopics = {
   "items-spawning": {
     en: ["Spawn pickups at randomized world positions on a timer.", "Collect items through player contact and update the pickup counter.", "Defeat the grove monster with two attacks and gather its randomized loot drop."],
@@ -99,7 +104,13 @@ function renderOverview() {
       document.querySelector("#back-link").textContent = ({ en: "← GODOT FORGE / LEARNING PATH", zh: "← GODOT FORGE / 学习路径", ms: "← GODOT FORGE / LALUAN PEMBELAJARAN" }[locale]);
     }
   }
-  completionButton.textContent = moduleData?.completed ? copy.reopen : copy.complete;
+  if (slug === "marketplace-system") {
+    const completion = marketplaceCompletionCopy[locale];
+    completionButton.textContent = moduleData?.completed ? completion.reopen : completion.complete;
+    document.querySelector("#completion-hint").textContent = moduleData?.completed ? completion.done : completion.ready;
+  } else {
+    completionButton.textContent = moduleData?.completed ? copy.reopen : copy.complete;
+  }
   document.querySelector("#status").textContent = statusKey ? copy[statusKey] : "";
 }
 

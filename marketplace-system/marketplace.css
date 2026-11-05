@@ -79,3 +79,10 @@
 .module-overview .marketplace-intro-section h1 { margin: 0 0 12px; font-size: clamp(38px, 6vw, 76px); line-height: 1.02; letter-spacing: -.045em; }
 .marketplace-intro-section #description { max-width: 850px; margin-bottom: 0; color: var(--muted); font-size: clamp(17px, 2vw, 21px); }
 body[data-module="marketplace-system"] #overview-notice { display: none; }
+
+.module-overview .completion-panel { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; }
+.completion-panel p { margin: 0; color: var(--muted); font-size: 14px; }
+.completion-panel #status:not(:empty) { margin-top: 4px; }
+.module-overview .completion-panel #complete { flex: none; background: #c4f265; border-color: #c4f265; color: #142119; font-size: 13px; font-weight: 700; }
+.module-overview .completion-panel #complete:hover:not(:disabled) { filter: brightness(1.09); }
+@media (max-width: 560px) { .module-overview .completion-panel { align-items: stretch; flex-direction: column; } }

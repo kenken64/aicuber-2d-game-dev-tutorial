@@ -424,9 +424,9 @@ function render() {
     button.addEventListener('click', () => choose(key)); return button;
   }));
   $('#replay-story').textContent = t.replay;
-  $('#complete-story').hidden = beat !== 5;
+  $('#complete-story').hidden = false;
   $('#complete-story').textContent = moduleCompleted ? t.completed : t.complete;
-  $('#complete-story').disabled = moduleCompleted;
+  $('#complete-story').disabled = beat !== 5 || moduleCompleted;
   $('#hero-picker-label').textContent = t.heroPicker; $('#boss-picker-label').textContent = t.bossPicker;
   $('#refresh-assets').textContent = t.refresh; $('#asset-note').textContent = t.assetNote;
   $('#trust-label').textContent = t.trust; $('#supplies-label').textContent = t.supplies;

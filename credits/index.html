@@ -10,9 +10,11 @@
     <link rel="stylesheet" href="/credits/styles.css" />
     <script src="/toast.js" defer></script>
     <script src="/module-reset.js" defer></script>
-    <script src="/credits/app.js" defer></script>
+    <script src="/credits/app.js?v=20261101-complete" defer></script>
     <title>Game Credits · Godot Forge</title>
-  </head>
+    <link rel="stylesheet" href="/module-completion.css?v=20261102-tooltips" />
+    <script src="/completion-hints.js?v=20261102" defer></script>
+</head>
   <body data-module="credits">
     <div class="credits-shell">
       <header class="module-header">
@@ -28,6 +30,8 @@
           <p class="eyebrow" id="intro-eyebrow">THE PEOPLE BEHIND THE GROVE</p>
           <div class="intro-row"><div><h1 id="page-title">Game Credits</h1><p id="intro-copy">Give every contributor a moment in the spotlight.</p></div><span class="sequence-status" id="sequence-status">CREDITS ROLLING</span></div>
         </section>
+
+        <section class="completion-row"><p id="completion-status" role="status">Mark the module complete anytime, or let the credits finish.</p><button type="button" class="primary-button" id="complete-module">COMPLETE MODULE</button></section>
 
         <section class="credits-stage" id="credits-stage" aria-label="Interactive game credits sequence">
           <article class="credits-panel">
@@ -69,7 +73,6 @@
           </div>
         </section>
 
-        <section class="completion-row"><p id="completion-status" role="status">Watch the credits roll to the end, or choose Skip to End to complete this module.</p><button type="button" class="primary-button" id="complete-module" disabled>COMPLETE MODULE</button></section>
       </main>
     </div>
   </body>

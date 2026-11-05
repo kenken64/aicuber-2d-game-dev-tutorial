@@ -43,10 +43,17 @@ try {
   }
   browser = await chromium.launch({ channel: process.env.CHROME_CHANNEL || 'chrome', headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  // The production bucket only permits localhost:3000; this isolated test
+  // uses a random port, so proxy the public bubble with test CORS headers.
+  await page.route('**/storyline-engine/images/dialogue-bubble-stage.webp', async route => {
+    const response = await fetch(route.request().url());
+    await route.fulfill({ status: response.status, body: Buffer.from(await response.arrayBuffer()), contentType: 'image/webp', headers: { 'access-control-allow-origin': '*' } });
+  });
+  await page.route('**/api/storyline/voice/url?*', route => route.fulfill({ status: 503, json: { error: 'Use the local voice endpoint in this test.' } }));
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   await page.goto(baseUrl);
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 16);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
   assert.equal(await page.locator('#module-nav a[href="/storyline-engine/"]').count(), 1);
   await page.goto(`${baseUrl}/storyline-engine/`);
   await page.waitForFunction(() => window.storyPreview?.usesHeroSprite && window.storyPreview?.usesBossSprite);
@@ -76,6 +83,7 @@ try {
     updateVoiceControls();
   });
   await page.click('#play-line');
+  await page.waitForFunction(() => window.__voiceRequests.length > 0);
   assert.match((await page.evaluate(() => new URL(window.__voiceRequests.at(-1), location.href).searchParams.get('text'))), /find my friend/);
   assert.equal(await page.evaluate(() => new URL(window.__voiceRequests.at(-1), location.href).searchParams.get('locale')), 'en');
   assert.equal(await page.locator('#play-line').getAttribute('aria-pressed'), 'true');
@@ -83,6 +91,7 @@ try {
   assert.equal(await page.locator('#dialogue-speaker').textContent(), 'Guardian');
   assert.match(await page.locator('#dialogue-line').textContent(), /spring is sealed/);
   await page.check('#auto-voice');
+  await page.waitForFunction(() => window.__voiceRequests.some(url => new URL(url, location.href).searchParams.get('text')?.includes('spring is sealed')));
   assert.match((await page.evaluate(() => new URL(window.__voiceRequests.at(-1), location.href).searchParams.get('text'))), /spring is sealed/);
   assert.equal(await page.evaluate(() => new URL(window.__voiceRequests.at(-1), location.href).searchParams.get('speaker')), 'guardian');
   assert.equal(await page.evaluate(() => window.storyPreview.dialogue.speaker), 'guardian');

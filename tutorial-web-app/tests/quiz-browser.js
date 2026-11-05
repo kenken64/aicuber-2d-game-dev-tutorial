@@ -12,7 +12,7 @@ page.on("pageerror", error => errors.push(error.message));
 try {
   await page.goto(`${baseUrl}/math-stem-physics-quiz/`);
   await page.waitForFunction(() => document.querySelectorAll(".quiz-card").length === 10);
-  assert.match(await page.locator('.chapter-label').textContent(), /CHAPTER 18/);
+  assert.match(await page.locator('.chapter-label').textContent(), /CHAPTER 19/);
   assert.equal(await page.locator('#retry').isVisible(), true);
   const questionBank = await (await page.request.get(`${baseUrl}/api/quizzes/math-stem-physics-quiz`)).json();
   assert.equal(questionBank.length, 40);
@@ -54,7 +54,7 @@ try {
       assert.equal(await page.locator('#answered-count').textContent(), '20 / 40 answered');
     }
   }
-  await page.waitForFunction(() => !document.querySelector("#complete").hidden);
+  await page.waitForFunction(() => !document.querySelector("#complete").disabled);
   assert.equal(await page.locator("#score").textContent(), "40 / 40");
   assert.equal(await page.locator('#answered-count').textContent(), '40 / 40 answered');
   assert.equal(await page.locator('.quiz-explanation a').count(), 10);

@@ -1,9 +1,9 @@
 // Reset one module's learner state. Generated files remain in the asset library.
 (() => {
   const copy = {
-    en: { reset: 'RESET MODULE', resetCurrent: 'RESET THIS MODULE', confirm: 'CONFIRM RESET', warning: 'Click again to reset only this module’s progress and current work. Saved artwork stays in the library.' },
-    zh: { reset: '重置模块', resetCurrent: '重置当前模块', confirm: '确认重置', warning: '再次点击只会重置当前模块的进度和工作内容；已保存的图片仍会保留。' },
-    ms: { reset: 'SET SEMULA MODUL', resetCurrent: 'SET SEMULA MODUL INI', confirm: 'SAHKAN SET SEMULA', warning: 'Klik sekali lagi untuk set semula kemajuan dan kerja modul ini sahaja. Karya yang disimpan kekal dalam pustaka.' },
+    en: { reset: 'RESET MODULE', resetCurrent: 'RESET THIS MODULE', title: 'Reset this module?', warning: 'Enter the reset passcode to clear this module’s progress and current work. Saved artwork stays in the library.', passcode: 'Reset passcode', cancel: 'CANCEL', confirm: 'RESET MODULE', incorrect: 'Incorrect passcode. Please try again.', unavailable: 'Reset is not configured on the server. Contact the administrator.', failed: 'Could not reset the module. Please try again.' },
+    zh: { reset: '重置模块', resetCurrent: '重置当前模块', title: '重置此模块？', warning: '请输入重置密码，清除本模块的进度和当前工作。已保存的图片仍会保留。', passcode: '重置密码', cancel: '取消', confirm: '重置模块', incorrect: '密码不正确，请重试。', unavailable: '服务器尚未配置重置密码，请联系管理员。', failed: '无法重置模块，请重试。' },
+    ms: { reset: 'SET SEMULA MODUL', resetCurrent: 'SET SEMULA MODUL INI', title: 'Set semula modul ini?', warning: 'Masukkan kod laluan untuk memadam kemajuan dan kerja semasa modul ini. Karya yang disimpan kekal dalam pustaka.', passcode: 'Kod laluan set semula', cancel: 'BATAL', confirm: 'SET SEMULA MODUL', incorrect: 'Kod laluan salah. Sila cuba lagi.', unavailable: 'Kod set semula belum dikonfigurasi pada pelayan. Hubungi pentadbir.', failed: 'Modul tidak dapat diset semula. Sila cuba lagi.' },
   };
   const currentSlug = document.body.dataset.module || location.pathname.split('/')[1] || '';
   const originalFetch = window.fetch.bind(window);
@@ -50,37 +50,65 @@
     return value;
   };
 
-  document.addEventListener('click', async event => {
+  const dialog = document.createElement('dialog');
+  dialog.id = 'module-reset-dialog';
+  dialog.setAttribute('aria-labelledby', 'module-reset-title');
+  dialog.setAttribute('aria-describedby', 'module-reset-description');
+  dialog.innerHTML = `<form id="module-reset-form"><h2 id="module-reset-title"></h2><p id="module-reset-description"></p><label for="module-reset-passcode" id="module-reset-label"></label><input id="module-reset-passcode" type="password" autocomplete="off" maxlength="128" required /><p id="module-reset-error" role="alert"></p><div class="module-reset-actions"><button id="module-reset-cancel" type="button"></button><button id="module-reset-submit" type="submit"></button></div></form>`;
+  document.body.append(dialog);
+  const form = dialog.querySelector('#module-reset-form');
+  const passcode = dialog.querySelector('#module-reset-passcode');
+  const error = dialog.querySelector('#module-reset-error');
+  const submit = dialog.querySelector('#module-reset-submit');
+  const cancel = dialog.querySelector('#module-reset-cancel');
+  let selectedButton = null;
+  let selectedSlug = '';
+  let busy = false;
+
+  function showResetDialog(button, slug) {
+    const text = copy[language()];
+    selectedButton = button; selectedSlug = slug;
+    dialog.querySelector('#module-reset-title').textContent = text.title;
+    dialog.querySelector('#module-reset-description').textContent = text.warning;
+    dialog.querySelector('#module-reset-label').textContent = text.passcode;
+    cancel.textContent = text.cancel; submit.textContent = text.confirm;
+    passcode.value = ''; error.textContent = '';
+    dialog.showModal(); passcode.focus();
+  }
+
+  document.addEventListener('click', event => {
     const button = event.target.closest('.reset-module-button');
-    if (!button || button.disabled) return;
+    if (!button || button.disabled || dialog.open) return;
     const slug = button.dataset.module;
     if (!slug) return;
     event.preventDefault();
-    if (button.dataset.confirming !== 'true') {
-      button.dataset.confirming = 'true';
-      button.textContent = copy[language()].confirm;
-      window.showToast?.(copy[language()].warning);
-      clearTimeout(button.resetTimer);
-      button.resetTimer = setTimeout(() => {
-        button.dataset.confirming = 'false';
-        button.textContent = slug === currentSlug ? copy[language()].resetCurrent : copy[language()].reset;
-      }, 8000);
-      return;
-    }
-    clearTimeout(button.resetTimer);
-    button.disabled = true;
+    showResetDialog(button, slug);
+  });
+  cancel.addEventListener('click', () => { if (!busy) dialog.close(); });
+  dialog.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
+  dialog.addEventListener('close', () => { passcode.value = ''; error.textContent = ''; });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (busy || !selectedSlug || !passcode.value) return;
+    const slug = selectedSlug;
+    const button = selectedButton;
+    const enteredPasscode = passcode.value;
+    busy = true; submit.disabled = true; cancel.disabled = true; passcode.disabled = true; button.disabled = true;
     resettingSlug = slug;
     let reloading = false;
     try {
       await Promise.allSettled([...(pendingWrites.get(slug) || [])]);
       const id = learnerId();
       const response = await fetch(`/api/modules/${encodeURIComponent(slug)}/reset`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ learnerId: id }),
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ learnerId: id, passcode: enteredPasscode }),
       });
-      if (!response.ok) return;
+      if (!response.ok) {
+        error.textContent = response.status === 403 ? copy[language()].incorrect : response.status === 503 ? copy[language()].unavailable : copy[language()].failed;
+        return;
+      }
       clearModuleStorage(slug, id);
+      dialog.close();
       if (slug === currentSlug && !document.querySelector('#module-grid')) {
         reloading = true;
         location.reload();
@@ -88,12 +116,12 @@
       }
       window.dispatchEvent(new CustomEvent('godot-forge-module-reset', { detail: { slug } }));
     } catch {
-      // The shared fetch wrapper displays the network error toast.
+      error.textContent = copy[language()].failed;
     } finally {
       if (!reloading) resettingSlug = null;
-      button.disabled = false;
-      button.dataset.confirming = 'false';
-      button.textContent = slug === currentSlug ? copy[language()].resetCurrent : copy[language()].reset;
+      busy = false; submit.disabled = false; cancel.disabled = false; passcode.disabled = false;
+      if (button.isConnected) button.disabled = false;
+      if (dialog.open) { passcode.focus(); passcode.select(); }
     }
   });
 
@@ -110,7 +138,7 @@
     if (home) home.before(button);
     else header.append(button);
     new MutationObserver(() => {
-      if (button.dataset.confirming !== 'true') button.textContent = copy[language()].resetCurrent;
+      button.textContent = copy[language()].resetCurrent;
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   }
 })();

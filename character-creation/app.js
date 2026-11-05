@@ -26,7 +26,7 @@ const copy = {
     loadTemplate: "LOAD TEMPLATE",
     previewTemplate: "PREVIEW SAMPLE ANIMATION",
     templateHelp: "Prefills the guide so you can test character and sprite generation quickly.",
-    chatAria: "Character prompt chat",
+    chatAria: "Character creation guide",
     guideTitle: "CHARACTER GUIDE",
     profileTitle: "CHARACTER PROFILE",
     draft: "DRAFT",
@@ -44,7 +44,9 @@ const copy = {
     promptEmpty: "Complete the guide to generate a reusable character prompt.",
     answerPlaceholder: "Type your answer...",
     answerAria: "Type your answer",
-    send: "SEND",
+    next: "NEXT",
+    editAnswers: "EDIT ANSWERS",
+    back: "← BACK",
     botLabel: "GUIDE",
     userLabel: "YOU",
     saveSuccess: "Character saved. Its sprite sheet and coordinates JSON are in the Final Game asset library.",
@@ -60,6 +62,7 @@ const copy = {
     productionEyebrow: "FROM IDEA TO MOTION",
     productionTitle: "Build the sprite sheet.",
     createSprite: "CREATE SPRITE SHEET",
+    regenerateSprite: "REGENERATE SPRITE SHEET",
     codexDesignTitle: "CODEX CHARACTER DESIGN",
     designEmpty: "Build your character to see the visual and gameplay direction.",
     waiting: "WAITING",
@@ -144,7 +147,7 @@ const copy = {
     loadTemplate: "加载模板",
     previewTemplate: "预览示例动画",
     templateHelp: "预先填写指南，快速测试角色和精灵生成。",
-    chatAria: "角色提示聊天",
+    chatAria: "角色创建指南",
     guideTitle: "角色指南",
     profileTitle: "角色档案",
     draft: "草稿",
@@ -162,7 +165,9 @@ const copy = {
     promptEmpty: "完成指南后即可生成可重复使用的角色提示。",
     answerPlaceholder: "输入你的答案……",
     answerAria: "输入你的答案",
-    send: "发送",
+    next: "下一步",
+    editAnswers: "修改答案",
+    back: "← 上一步",
     botLabel: "指南",
     userLabel: "你",
     saveSuccess: "角色已保存，精灵表和坐标 JSON 已加入最终游戏素材库。",
@@ -178,6 +183,7 @@ const copy = {
     productionEyebrow: "从创意到动作",
     productionTitle: "制作精灵表。",
     createSprite: "创建精灵表",
+    regenerateSprite: "重新生成精灵表",
     codexDesignTitle: "CODEX 角色设计",
     designEmpty: "创建角色后，你会在这里看到视觉和玩法方向。",
     waiting: "等待中",
@@ -262,7 +268,7 @@ const copy = {
     loadTemplate: "MUAT TEMPLAT",
     previewTemplate: "PRATONTON ANIMASI CONTOH",
     templateHelp: "Isi panduan terlebih dahulu supaya anda boleh menguji penjanaan watak dan sprite dengan cepat.",
-    chatAria: "Sembang prompt watak",
+    chatAria: "Panduan penciptaan watak",
     guideTitle: "PANDUAN WATAK",
     profileTitle: "PROFIL WATAK",
     draft: "DRAF",
@@ -280,7 +286,9 @@ const copy = {
     promptEmpty: "Lengkapkan panduan untuk menjana prompt watak yang boleh digunakan semula.",
     answerPlaceholder: "Taip jawapan anda...",
     answerAria: "Taip jawapan anda",
-    send: "HANTAR",
+    next: "SETERUSNYA",
+    editAnswers: "UBAH JAWAPAN",
+    back: "← KEMBALI",
     botLabel: "PANDUAN",
     userLabel: "ANDA",
     saveSuccess: "Watak disimpan. Helaian sprite dan JSON koordinat kini berada dalam pustaka aset Permainan Akhir.",
@@ -296,6 +304,7 @@ const copy = {
     productionEyebrow: "DARIPADA IDEA KEPADA PERGERAKAN",
     productionTitle: "Bina helaian sprite.",
     createSprite: "CIPTA HELAIAN SPRITE",
+    regenerateSprite: "JANA SEMULA HELAIAN SPRITE",
     codexDesignTitle: "REKAAN WATAK CODEX",
     designEmpty: "Bina watak anda untuk melihat arah visual dan permainan.",
     waiting: "MENUNGGU",
@@ -417,11 +426,15 @@ const languageToggle = document.querySelector("#language-toggle");
 const chatLog = document.querySelector("#chat-log");
 const answerForm = document.querySelector("#answer-form");
 const answerInput = document.querySelector("#answer-input");
+const answerRow = document.querySelector("#answer-row");
+const previousStepButton = document.querySelector("#previous-step");
+const editAnswersButton = document.querySelector("#edit-answers");
 const choiceList = document.querySelector("#choice-list");
 const stepCount = document.querySelector("#step-count");
 const saveButton = document.querySelector("#save-character");
 const buildButton = document.querySelector("#build-character");
 const createSpriteButton = document.querySelector("#create-sprite");
+const regenerateSpriteButton = document.querySelector("#regenerate-sprite");
 const saveStatus = document.querySelector("#save-status");
 const manifestDownload = document.createElement('a');
 manifestDownload.className = 'small-action';
@@ -479,7 +492,6 @@ const learnerId = (() => {
   if (!value) { value = crypto.randomUUID().replace(/-/g, ""); localStorage.setItem(key, value); }
   return value;
 })();
-const selectedAttributes = new Set();
 const keys = new Set();
 const movementState = { x: 0.5, y: 0, velocityY: 0, grounded: true };
 let facingDirection = 1;
@@ -491,7 +503,7 @@ let generationStage = "design";
 let generationButtonStates = null;
 
 async function saveCharacterCheckpoint() {
-  const state = { creativePrompt: creativePromptInput.value, answers, currentStep, isComplete, aiDesign, spriteSheet, spriteAsset, movementSpec, selectedAnimation };
+  const state = { creativePrompt: creativePromptInput.value, answers, currentStep, wizardStep: currentStep, isComplete, aiDesign, spriteSheet, spriteAsset, movementSpec, selectedAnimation };
   await fetch("/api/modules/character-creation/checkpoint", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ learnerId, state }) }).catch(() => {});
 }
 
@@ -502,8 +514,10 @@ async function restoreCharacterCheckpoint() {
   if (!state || typeof state !== "object") return;
   creativePromptInput.value = String(state.creativePrompt || "");
   Object.assign(answers, state.answers && typeof state.answers === "object" ? state.answers : {});
-  currentStep = Math.min(currentCopy().steps.length - 1, Number(state.currentStep) || Math.max(0, Object.keys(answers).length - 1));
-  isComplete = Boolean(state.isComplete) || Object.keys(answers).length >= currentCopy().steps.length;
+  const steps = currentCopy().steps;
+  isComplete = steps.every((step) => Boolean(answers[step.field]));
+  const restoredStep = Number.isInteger(state.wizardStep) ? state.wizardStep : isComplete ? steps.length : Number.isInteger(state.currentStep) ? state.currentStep : steps.findIndex((step) => !answers[step.field]);
+  currentStep = Math.max(0, Math.min(steps.length, restoredStep));
   aiDesign = state.aiDesign && typeof state.aiDesign === "object" ? state.aiDesign : null;
   spriteSheet = state.spriteSheet && typeof state.spriteSheet === "object" ? state.spriteSheet : null;
   showManifestLink(spriteSheet?.finalGameAsset?.metadataAsset);
@@ -619,8 +633,7 @@ function loadSelectedTemplate() {
   creativePromptInput.value = template.creativePrompt;
   Object.keys(answers).forEach((field) => delete answers[field]);
   Object.assign(answers, template.answers);
-  selectedAttributes.clear();
-  currentStep = currentCopy().steps.length - 1;
+  currentStep = currentCopy().steps.length;
   isComplete = true;
   aiDesign = null;
   spriteSheet = null;
@@ -691,47 +704,42 @@ function addMessage(role, text) {
 
 function renderChat() {
   const localeCopy = currentCopy();
+  const step = localeCopy.steps[currentStep];
   chatLog.innerHTML = "";
-  addMessage("bot", localeCopy.welcome);
-  localeCopy.steps.forEach((step, index) => {
-    if (answers[step.field]) {
-      addMessage("bot", step.prompt);
-      addMessage("user", answers[step.field]);
-    }
-    if (index === currentStep && !isComplete) addMessage("bot", step.prompt);
-  });
-  if (isComplete) addMessage("bot", localeCopy.finalMessage);
-  chatLog.scrollTop = chatLog.scrollHeight;
+  addMessage("bot", step ? step.prompt : localeCopy.finalMessage);
+  answerRow.hidden = !step;
+  editAnswersButton.hidden = Boolean(step);
+  previousStepButton.disabled = currentStep === 0;
+  answerInput.value = step ? answers[step.field] || "" : "";
   renderChoices();
-  stepCount.textContent = isComplete
-    ? `${localeCopy.steps.length} / ${localeCopy.steps.length}`
-    : `${String(currentStep + 1).padStart(2, "0")} / ${String(localeCopy.steps.length).padStart(2, "0")}`;
+  stepCount.textContent = `${String(Math.min(currentStep + 1, localeCopy.steps.length)).padStart(2, "0")} / ${String(localeCopy.steps.length).padStart(2, "0")}`;
 }
 
 function renderChoices() {
   const step = currentCopy().steps[currentStep];
   choiceList.innerHTML = "";
-  if (!step || isComplete) return;
+  if (!step) return;
+  const selected = step.field === "focusAttribute"
+    ? answerInput.value.split(",").map((value) => value.trim()).filter(Boolean)
+    : [answerInput.value.trim()];
   step.choices.forEach((choice) => {
     const button = document.createElement("button");
     button.className = "choice-button";
     button.type = "button";
     button.textContent = choice;
-    if (step.field === "focusAttribute") {
-      button.classList.toggle("selected", selectedAttributes.has(choice));
-      button.setAttribute("aria-pressed", String(selectedAttributes.has(choice)));
-      button.addEventListener("click", () => {
-        if (selectedAttributes.has(choice)) selectedAttributes.delete(choice);
-        else selectedAttributes.add(choice);
-        answerInput.value = [...selectedAttributes].join(", ");
-        renderChoices();
-      });
-      choiceList.append(button);
-      return;
-    }
+    button.classList.toggle("selected", selected.includes(choice));
+    button.setAttribute("aria-pressed", String(selected.includes(choice)));
     button.addEventListener("click", () => {
-      answerInput.value = choice;
-      answerForm.requestSubmit();
+      if (step.field === "focusAttribute") {
+        const values = new Set(answerInput.value.split(",").map((value) => value.trim()).filter(Boolean));
+        if (values.has(choice)) values.delete(choice);
+        else values.add(choice);
+        answerInput.value = [...values].join(", ");
+      } else {
+        answerInput.value = choice;
+      }
+      renderChoices();
+      renderProfile();
     });
     choiceList.append(button);
   });
@@ -743,20 +751,39 @@ function renderProfile() {
   });
   const hasAnswers = Object.keys(answers).length > 0;
   profileEmpty.hidden = hasAnswers;
-  saveButton.disabled = generationInProgress || !isComplete || !spriteSheet?.assetUrl;
-  buildButton.disabled = generationInProgress || !isComplete;
+  const reviewing = currentStep === currentCopy().steps.length;
+  saveButton.disabled = generationInProgress || !isComplete || !reviewing || !spriteSheet?.assetUrl;
+  buildButton.disabled = generationInProgress || !isComplete || (currentStep < currentCopy().steps.length && !answerInput.value.trim());
+  regenerateSpriteButton.hidden = !spriteSheet?.assetUrl;
   generatedPrompt.textContent = isComplete ? currentCopy().promptTemplate(answers) : currentCopy().promptEmpty;
+}
+
+function commitAnswer(step, cleanValue) {
+  if (answers[step.field] && answers[step.field] !== cleanValue) {
+    aiDesign = null;
+    spriteSheet = null;
+    spriteAsset = null;
+    spriteImage = null;
+    movementSpec = null;
+    productionWorkspace.hidden = true;
+    createSpriteButton.disabled = true;
+    saveSpriteButton.disabled = true;
+    showManifestLink(null);
+    renderAiDesign();
+  }
+  answers[step.field] = cleanValue;
+  isComplete = currentCopy().steps.every((item) => Boolean(answers[item.field]));
 }
 
 function submitAnswer(value) {
   const cleanValue = value.trim();
-  if (!cleanValue || isComplete) return;
-  const field = currentCopy().steps[currentStep].field;
-  answers[field] = cleanValue;
-  if (field === "focusAttribute") selectedAttributes.clear();
-  if (currentStep === currentCopy().steps.length - 1) isComplete = true;
-  else currentStep += 1;
-  answerInput.value = "";
+  const step = currentCopy().steps[currentStep];
+  if (!step || !cleanValue) {
+    if (step) answerInput.focus();
+    return;
+  }
+  commitAnswer(step, cleanValue);
+  currentStep += 1;
   saveStatus.textContent = "";
   renderChat();
   renderProfile();
@@ -1055,9 +1082,9 @@ async function buildCharacter() {
   }
 }
 
-async function createSpriteSheet(fromBuild = false) {
+async function createSpriteSheet(fromBuild = false, regenerate = false) {
   if (!aiDesign) return;
-  if (spriteSheet?.assetUrl) {
+  if (spriteSheet?.assetUrl && !regenerate) {
     productionWorkspace.hidden = false;
     renderAnimationOptions(); drawSpriteSheet();
     saveStatus.textContent = "Using your saved sprite sheet. Change the guide to create a new character.";
@@ -1092,6 +1119,7 @@ async function createSpriteSheet(fromBuild = false) {
     renderAnimationOptions();
     drawSpriteSheet();
     spriteStatus.textContent = currentCopy().ready;
+    regenerateSpriteButton.hidden = false;
     saveCharacterCheckpoint();
     saveSpriteButton.disabled = generationInProgress;
     saveButton.disabled = generationInProgress;
@@ -1440,10 +1468,14 @@ async function saveCharacter() {
   if (!isComplete) return;
   saveButton.disabled = true;
   saveStatus.textContent = "";
-  const conversation = [...chatLog.querySelectorAll(".chat-message")].map((message) => ({
-    role: message.classList.contains("user") ? "user" : "guide",
-    text: message.querySelector(".message-body").textContent,
-  }));
+  const conversation = [
+    { role: "guide", text: currentCopy().welcome },
+    ...currentCopy().steps.flatMap((step) => [
+      { role: "guide", text: step.prompt },
+      { role: "user", text: answers[step.field] },
+    ]),
+    { role: "guide", text: currentCopy().finalMessage },
+  ];
   try {
     if (spriteSheet && (!spriteAsset || idleCleanupApplied)) await saveSpriteSheetAsset();
     const response = await fetch("/api/characters", {
@@ -1485,8 +1517,35 @@ answerForm.addEventListener("submit", (event) => {
   submitAnswer(answerInput.value);
 });
 
-buildButton.addEventListener("click", buildCharacter);
-createSpriteButton.addEventListener("click", createSpriteSheet);
+editAnswersButton.addEventListener("click", () => {
+  if (generationInProgress) return;
+  currentStep = 0;
+  renderChat();
+  renderProfile();
+  saveCharacterCheckpoint();
+});
+previousStepButton.addEventListener("click", () => {
+  if (currentStep === 0 || generationInProgress) return;
+  currentStep -= 1;
+  renderChat();
+  renderProfile();
+  saveCharacterCheckpoint();
+});
+answerInput.addEventListener("input", () => { renderChoices(); renderProfile(); });
+
+buildButton.addEventListener("click", () => {
+  const step = currentCopy().steps[currentStep];
+  if (step) {
+    const value = answerInput.value.trim();
+    if (!value) { answerInput.focus(); return; }
+    commitAnswer(step, value);
+    renderProfile();
+    saveCharacterCheckpoint();
+  }
+  buildCharacter();
+});
+createSpriteButton.addEventListener("click", () => createSpriteSheet());
+regenerateSpriteButton.addEventListener("click", () => createSpriteSheet(false, true));
 saveSpriteButton.addEventListener("click", async () => {
   try {
     await saveSpriteSheetAsset();
@@ -1545,9 +1604,11 @@ window.addEventListener("blur", () => keys.clear());
 languageToggle.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-locale]");
   if (!button) return;
+  const draft = answerInput.value;
   currentLocale = button.dataset.locale;
   window.localStorage.setItem("godot-forge-locale", currentLocale);
   applyCopy();
+  if (currentStep < currentCopy().steps.length) { answerInput.value = draft; renderChoices(); }
 });
 
 applyCopy();

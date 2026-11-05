@@ -4,7 +4,7 @@ import { promises as fs } from "node:fs";
 import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { DuckDBInstance } from "@duckdb/node-api";
 import sharp from "sharp";
 import { inspectBossLayout, bossRows } from "../boss-creation/sprite-layout.mjs";
@@ -66,6 +66,8 @@ const databasePath = await fs.access(legacyDatabasePath).then(
 );
 const port = Number(process.env.PORT || 3000);
 const maxAssetBytes = 50 * 1024 * 1024;
+const resetPasscode = process.env.MODULE_RESET_PASSCODE || "";
+const resetPasscodeDigest = resetPasscode ? createHash('sha256').update(resetPasscode, 'utf8').digest() : null;
 const openAiApiKey = process.env.OPENAI_API_KEY || "";
 const openAiApiBase = (process.env.OPENAI_API_BASE || "https://api.openai.com/v1").replace(/\/+$/, "");
 const openAiImageModel = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2.5-sunburst";
@@ -1067,6 +1069,13 @@ async function generateSpriteAsset(body) {
   const characterName = body.character?.name || "character";
   const baseImage = Buffer.from(encodedImage, "base64");
   const guide = await createGaitGuide(sharp);
+  // A full action atlas encourages the model to copy its existing, often static
+  // gait. Supply only the neutral character as the identity reference instead.
+  const { width, height } = await sharp(baseImage).metadata();
+  const identity = await sharp(baseImage)
+    .extract({ left: 0, top: 0, width: Math.floor(width / 4), height: Math.floor(height / 7) })
+    .resize(768, 768, { fit: "contain", background: "#00000000", kernel: "nearest" })
+    .png().toBuffer();
   let gaitImage;
   let validationError;
   // All briefs enter this pass, including templates. Never silently publish the
@@ -1079,7 +1088,7 @@ async function generateSpriteAsset(body) {
     form.set("output_format", "png");
     form.set("quality", "high");
     form.set("size", "1024x1024");
-    form.append("image[]", new Blob([baseImage], { type: "image/png" }), "character-reference.png");
+    form.append("image[]", new Blob([identity], { type: "image/png" }), "character-reference.png");
     form.append("image[]", new Blob([guide], { type: "image/png" }), "gait-pose-guide.png");
     const edited = await fetch(`${openAiApiBase}/images/edits`, {
       method: "POST", headers: { authorization: `Bearer ${openAiApiKey}` }, body: form,
@@ -1528,8 +1537,12 @@ async function handleApi(request, response, url) {
   const resetMatch = url.pathname.match(/^\/api\/modules\/([^/]+)\/reset$/);
   if (resetMatch && request.method === "POST") {
     const slug = decodeURIComponent(resetMatch[1]);
-    const { learnerId } = await readJson(request);
+    const { learnerId, passcode } = await readJson(request);
     if (!findModule(slug) || !validLearnerId(learnerId)) return sendJson(response, 400, { error: "A valid module and learner are required." });
+    if (!resetPasscodeDigest) return sendJson(response, 503, { error: "Module reset is not configured. Set MODULE_RESET_PASSCODE on the server." });
+    if (typeof passcode !== 'string' || passcode.length > 128 || !timingSafeEqual(createHash('sha256').update(passcode, 'utf8').digest(), resetPasscodeDigest)) {
+      return sendJson(response, 403, { error: "Incorrect reset passcode." });
+    }
     await database.run(
       `INSERT INTO learner_progress (learner_id, module_slug, completed)
        VALUES ($learner_id, $module_slug, FALSE)
@@ -1638,6 +1651,14 @@ async function handleApi(request, response, url) {
     const body = await readJson(request);
     const completed = Boolean(body.completed);
     if (body.learnerId !== undefined && !validLearnerId(body.learnerId)) return sendJson(response, 400, { error: "A valid learner is required." });
+    if (completed && findModule(slug).level >= 20) {
+      if (!validLearnerId(body.learnerId)) return sendJson(response, 400, { error: 'A valid learner is required to complete this module.' });
+      const progress = await getModules(body.learnerId);
+      const required = progress.filter(module => Number(module.level) <= 19);
+      if (required.length !== 19 || required.some(module => !module.completed)) {
+        return sendJson(response, 403, { error: 'Complete modules 1–19 to unlock modules 20–22.' });
+      }
+    }
     if (slug === 'math-stem-physics-quiz') {
       if (!validLearnerId(body.learnerId)) return sendJson(response, 400, { error: 'A valid learner is required to update quiz progress.' });
       if (completed) {

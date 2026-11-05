@@ -32,6 +32,18 @@ try {
     for (const name of ['mossweave-armor', 'leafsteel-sword', 'emerald-ring', 'heartseed-necklace']) {
       assert.equal((await page.request.get(`${baseUrl}/marketplace-system/images/${name}.webp`)).status(), 200);
     }
+    const completeButton = page.locator('#complete');
+    await completeButton.waitFor({ state: 'visible' });
+    await page.waitForFunction(() => !document.querySelector('#complete').disabled);
+    assert.equal(await completeButton.textContent(), 'COMPLETE MODULE');
+    assert.equal(await completeButton.evaluate(button => Boolean(button.closest('.completion-panel').compareDocumentPosition(document.querySelector('.marketplace')) & Node.DOCUMENT_POSITION_FOLLOWING)), true);
+    await completeButton.click();
+    await page.waitForFunction(() => document.querySelector('#completion-hint').textContent === 'Marketplace System completed.');
+    assert.equal(await completeButton.textContent(), 'REOPEN MODULE');
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector('#completion-hint').textContent === 'Marketplace System completed.');
+    await completeButton.click();
+    await page.waitForFunction(() => document.querySelector('#complete').textContent === 'COMPLETE MODULE');
     assert.equal(await page.locator('.gear-card').count(), 12);
     assert.equal(await page.locator('#gold-count').textContent(), '300');
     await page.click('[data-category="necklace"]');
@@ -52,9 +64,11 @@ try {
     assert.equal(await page.locator('#gold-count').textContent(), '168');
     await page.click('[data-locale="zh"]');
     assert.equal(await page.locator('[data-grade="rare"]').textContent(), '稀有');
+    assert.equal(await page.locator('#complete').textContent(), '完成模块');
     assert.match(await page.locator('.prompt-card textarea').first().inputValue(), /为奇幻林地冒险创作一枚精致护甲图标/);
     await page.click('[data-locale="ms"]');
     assert.equal(await page.locator('[data-grade="epic"]').textContent(), 'Epik');
+    assert.equal(await page.locator('#complete').textContent(), 'SELESAIKAN MODUL');
     assert.match(await page.locator('.prompt-card textarea').first().inputValue(), /Cipta satu ikon perisai premium/);
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

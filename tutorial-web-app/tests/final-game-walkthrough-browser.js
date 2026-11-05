@@ -31,7 +31,14 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.stack));
+    // The separate prerequisite test covers unlocking; this test exercises the walkthrough itself.
+    await page.route('**/api/modules?learnerId=*', async route => {
+      const response = await route.fetch();
+      const modules = await response.json();
+      await route.fulfill({ response, json: modules.map(module => module.level <= 19 ? { ...module, completed: true } : module) });
+    });
     await page.goto(`${baseUrl}/final-game/#player`);
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-module-gated'));
     await page.locator('#player .writing-stepper').waitFor();
     assert.equal(await page.locator('.writing-stepper').count(), 9);
     assert.equal(await page.locator('.copy-code').count(), 0);

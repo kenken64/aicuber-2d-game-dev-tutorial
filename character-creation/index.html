@@ -8,13 +8,16 @@
     <script src="/module-reset.js" defer></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Create a 2D game character with a guided prompt chat." />
+    <meta name="description" content="Create a 2D game character with a step-by-step guide." />
     <title data-i18n="pageTitle">Character Creation — Godot Forge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260921-12" />
-  </head>
+    <link rel="stylesheet" href="styles.css?v=20261101-3" />
+      <script src="/module-complete.js" defer></script>
+    <link rel="stylesheet" href="/module-completion.css?v=20261102-tooltips" />
+    <script src="/completion-hints.js?v=20261102" defer></script>
+</head>
   <body>
     <div class="module-shell">
       <header class="module-header">
@@ -62,7 +65,7 @@
         </section>
 
         <div class="creation-workspace">
-          <section class="chat-card" aria-label="Character prompt chat" data-i18n-aria="chatAria">
+          <section class="chat-card" aria-label="Character creation guide" data-i18n-aria="chatAria">
             <div class="card-header">
               <span><i class="live-dot"></i><span data-i18n="guideTitle">CHARACTER GUIDE</span></span>
               <span id="step-count">01 / 07</span>
@@ -70,10 +73,12 @@
             <div id="chat-log" class="chat-log" aria-live="polite"></div>
             <form id="answer-form" class="answer-form">
               <div id="choice-list" class="choice-list"></div>
-              <div class="answer-row">
+              <div id="answer-row" class="answer-row">
                 <input id="answer-input" type="text" autocomplete="off" maxlength="500" data-i18n-placeholder="answerPlaceholder" data-i18n-aria="answerAria" placeholder="Type your answer..." aria-label="Type your answer" />
-                <button id="send-button" class="send-button" type="submit"><span data-i18n="send">SEND</span> ↗</button>
+                <button id="send-button" class="send-button" type="submit"><span data-i18n="next">NEXT</span> →</button>
               </div>
+              <button id="edit-answers" class="send-button wizard-edit" type="button" data-i18n="editAnswers" hidden>EDIT ANSWERS</button>
+              <button id="previous-step" class="wizard-back" type="button" data-i18n="back">← BACK</button>
             </form>
           </section>
 
@@ -122,7 +127,7 @@
               <p class="eyebrow" data-i18n="productionEyebrow">FROM IDEA TO MOTION</p>
               <h2 data-i18n="productionTitle">Build the sprite sheet.</h2>
             </div>
-            <button id="create-sprite" class="primary-action" type="button" disabled data-i18n="createSprite">CREATE SPRITE SHEET</button>
+            <div class="production-actions"><button id="create-sprite" class="primary-action" type="button" disabled data-i18n="createSprite">CREATE SPRITE SHEET</button><button id="regenerate-sprite" class="small-action" type="button" hidden data-i18n="regenerateSprite">REGENERATE SPRITE SHEET</button></div>
           </div>
 
           <div class="production-grid">
@@ -172,6 +177,6 @@
         <span data-i18n="footerMessage">BUILD THE HERO BEFORE THE WORLD</span>
       </footer>
     </div>
-    <script src="app.js?v=20260921-13"></script>
+    <script src="app.js?v=20261101-4"></script>
   </body>
 </html>

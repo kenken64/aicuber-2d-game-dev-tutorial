@@ -57,7 +57,10 @@ try {
     const fresh = await browser.newPage();
     await fresh.route('**/api/chat', route => route.fulfill({ json: { message: { content: JSON.stringify(direction) } } }));
     await fresh.goto(`${baseUrl}/${module}/`);
-    for (let step = 0; step < 6; step++) await fresh.locator('#choice-list .choice-button').first().click();
+    for (let step = 0; step < 6; step++) {
+      await fresh.locator('#choice-list .choice-button').first().click();
+      await fresh.locator('#answer-row button[type=submit]').click();
+    }
     await fresh.click('#build-direction');
     await fresh.waitForFunction(message => [...document.querySelectorAll('.action-toast')].some(el => el.textContent === message), expected);
     await fresh.close();

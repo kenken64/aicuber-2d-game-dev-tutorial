@@ -12,8 +12,10 @@
     <script src="/toast.js" defer></script>
     <script src="/module-reset.js" defer></script>
     <script src="/node_modules/phaser/dist/phaser.min.js" defer></script>
-    <script src="/storyline-engine/app.js" defer></script>
-  </head>
+    <script src="/storyline-engine/app.js?v=20261101-complete" defer></script>
+    <link rel="stylesheet" href="/module-completion.css?v=20261102-tooltips" />
+    <script src="/completion-hints.js?v=20261102" defer></script>
+</head>
   <body data-module="storyline-engine">
     <div class="story-shell">
       <header class="module-header">
@@ -62,7 +64,7 @@
               <h3 id="beat-title"></h3>
               <p id="beat-body"></p>
               <div class="choices" id="choices"></div>
-              <div class="story-actions"><button type="button" id="replay-story">REPLAY STORY</button><button type="button" id="complete-story" hidden>COMPLETE MODULE</button></div>
+              <div class="story-actions"><button type="button" id="replay-story">REPLAY STORY</button><button type="button" id="complete-story" disabled>COMPLETE MODULE</button></div>
               <p id="story-status" role="status"></p>
             </div>
           </div>

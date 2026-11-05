@@ -53,12 +53,15 @@
   const rockImage = new Image();
   const splashImage = new Image();
   const swimmerImage = new Image();
+  const crawlImage = new Image();
   for (const image of [sceneImage, rockImage, splashImage, swimmerImage]) image.crossOrigin = "anonymous";
   let swimmerParts = null;
+  let crawlFrames = null;
   sceneImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/forest-pool.webp";
   rockImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/boulder.webp";
   splashImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/water-splash.webp";
   swimmerImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/swimmer.webp";
+  crawlImage.src = "/game-physics/swimmer-crawl-v2.webp";
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let state = "ready";
   let completed = false;
@@ -240,15 +243,85 @@
     }
   }
 
+  // The pose sequence animates one arm; a separate front-arm cut-out pulls
+  // in the opposite phase while the legs flutter.
+  function setupCrawlFrames() {
+    if (crawlFrames || !crawlImage.naturalWidth) return;
+    const frameWidth = crawlImage.naturalWidth / 2;
+    const frameHeight = Math.floor(crawlImage.naturalHeight / 2);
+    const legRegions = {
+      upperLeg: [[0, 126], [168, 132], [235, 157], [257, 192], [265, 218], [165, 236], [0, 230]],
+      lowerLeg: [[0, 219], [135, 204], [248, 209], [270, 233], [272, 275], [226, 291], [0, 330]],
+      frontArm: [[575, 153], [625, 150], [652, 125], [708, 108], [820, 105], [820, 215], [706, 205], [639, 200], [575, 194]],
+    };
+    const shape = (context, points) => {
+      context.beginPath();
+      points.forEach(([x, y], index) => {
+        const px = 44 + x * 1.04, py = 92 + y * .82;
+        if (index) context.lineTo(px, py); else context.moveTo(px, py);
+      });
+      context.closePath();
+      context.fill();
+    };
+    crawlFrames = Array.from({ length: 4 }, (_, index) => {
+      const makeFrame = () => {
+        const layer = document.createElement("canvas");
+        layer.width = frameWidth; layer.height = frameHeight;
+        layer.getContext("2d").drawImage(crawlImage, index % 2 * frameWidth, Math.floor(index / 2) * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+        return layer;
+      };
+      const body = makeFrame();
+      const bodyContext = body.getContext("2d");
+      bodyContext.globalCompositeOperation = "destination-out";
+      Object.values(legRegions).forEach(points => shape(bodyContext, points));
+      const parts = { body };
+      for (const [name, points] of Object.entries(legRegions)) {
+        const layer = makeFrame();
+        const layerContext = layer.getContext("2d");
+        layerContext.globalCompositeOperation = "destination-in";
+        shape(layerContext, points);
+        parts[name] = layer;
+      }
+      return parts;
+    });
+  }
+
+  function drawCrawlFrame(width) {
+    const frameWidth = crawlImage.naturalWidth / 2;
+    const frameHeight = Math.floor(crawlImage.naturalHeight / 2);
+    const scale = width / frameWidth;
+    const index = swimmer.moving ? Math.floor((swimmer.strokePhase % (Math.PI * 2)) / (Math.PI * 2) * 4) : 0;
+    const parts = crawlFrames[index];
+    const kick = Math.sin(swimmer.strokePhase * 3) * swimmer.strokePower;
+    const drawPart = (name, pivotX, pivotY, angle) => {
+      const x = 44 + pivotX * 1.04, y = 92 + pivotY * .82;
+      ctx.save();
+      ctx.translate((x - frameWidth / 2) * scale, (y - frameHeight / 2) * scale);
+      ctx.rotate(angle);
+      ctx.drawImage(parts[name], -x * scale, -y * scale, width, frameHeight * scale);
+      ctx.restore();
+    };
+    drawPart("upperLeg", 255, 204, kick * .10);
+    drawPart("lowerLeg", 266, 244, -kick * .13);
+    ctx.drawImage(parts.body, -width / 2, -frameHeight * scale / 2, width, frameHeight * scale);
+    // The forward arm pulls while the other arm is lifting out to recover.
+    const frontPull = (1 - Math.cos(swimmer.strokePhase)) / 2 * swimmer.strokePower;
+    drawPart("frontArm", 585, 165, frontPull * 1.25);
+    canvas.dataset.swimmerFrame = String(index);
+    canvas.dataset.swimmerFrontPull = frontPull.toFixed(2);
+  }
+
   function drawSwimmerImage(width, height) {
     if (!swimmerParts) { ctx.drawImage(swimmerImage, -width / 2, -height / 2, width, height); return; }
     const scale = width / swimmerImage.naturalWidth;
     const stroke = Math.sin(swimmer.strokePhase) * swimmer.strokePower;
-    const armAngle = (swimmer.strokePhase % (Math.PI * 2)) * swimmer.strokePower;
-    const reach = (1 - Math.cos(swimmer.strokePhase)) / 2 * swimmer.strokePower;
-    const drawPart = (name, pivotX, pivotY, angle, shiftX = 0, shiftY = 0) => {
+    // Keep each limb attached to its original joint. A bounded, periodic
+    // sweep avoids the jump caused by rotating a cut-out through a full turn.
+    const frontPull = (1 - Math.cos(swimmer.strokePhase)) / 2;
+    const backRecovery = 1 - frontPull;
+    const drawPart = (name, pivotX, pivotY, angle) => {
       ctx.save();
-      ctx.translate((pivotX - swimmerImage.naturalWidth / 2) * scale + shiftX, (pivotY - swimmerImage.naturalHeight / 2) * scale + shiftY);
+      ctx.translate((pivotX - swimmerImage.naturalWidth / 2) * scale, (pivotY - swimmerImage.naturalHeight / 2) * scale);
       ctx.rotate(angle);
       ctx.drawImage(swimmerParts[name], -pivotX * scale, -pivotY * scale, width, height);
       ctx.restore();
@@ -256,17 +329,16 @@
     drawPart("upperLeg", 255, 204, stroke * .18);
     drawPart("lowerLeg", 266, 244, -stroke * .22);
     ctx.drawImage(swimmerParts.body, -width / 2, -height / 2, width, height);
-    // Both arms turn through a stroke together. Because one starts behind the
-    // body and the other reaches ahead, half a turn swaps their reach: the
-    // back hand comes forward above water as the front hand pulls back below.
-    drawPart("frontArm", 585, 165, armAngle, -reach * 27, reach * 11);
-    drawPart("backArm", 407, 165, armAngle, reach * 35, -reach * 7);
+    // Alternate the forward pull and rear recovery, keeping both cut-outs
+    // anchored. Both ease back to their original positions on release.
+    drawPart("frontArm", 585, 165, frontPull * 1.15 * swimmer.strokePower);
+    drawPart("backArm", 407, 165, backRecovery * 1.15 * swimmer.strokePower);
   }
 
   function drawSwimmer() {
-    if (!swimmerImage.complete || !swimmerImage.naturalWidth) return;
+    if (!crawlFrames && (!swimmerImage.complete || !swimmerImage.naturalWidth)) return;
     const width = 238;
-    const height = width * swimmerImage.naturalHeight / swimmerImage.naturalWidth;
+    const height = swimmerImage.naturalWidth ? width * swimmerImage.naturalHeight / swimmerImage.naturalWidth : width * .43;
     const x = swimmer.x;
     const y = WATER_Y - 14 + swimmer.depth + (reducedMotion ? 0 : Math.sin(swimmer.phase * 2) * (swimmer.moving ? 2 : 1));
 
@@ -299,7 +371,8 @@
       ctx.translate(x, y);
       ctx.scale(swimmer.facing, 1);
       ctx.rotate(swimmer.pitch + (reducedMotion ? 0 : Math.sin(swimmer.phase) * .025));
-      drawSwimmerImage(width, height);
+      if (crawlFrames) drawCrawlFrame(264);
+      else drawSwimmerImage(width, height);
     };
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, WIDTH, WATER_Y); ctx.clip(); drawBody(); ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.rect(0, WATER_Y, WIDTH, HEIGHT - WATER_Y); ctx.clip();
@@ -423,6 +496,8 @@
   document.addEventListener("visibilitychange", () => { if (document.hidden) swimKeys.clear(); });
   document.addEventListener("focusin", event => { if (event.target.matches("input, textarea, select")) swimKeys.clear(); });
   canvas.addEventListener("pointerdown", () => canvas.focus());
+  crawlImage.addEventListener("load", setupCrawlFrames);
+  if (crawlImage.complete) setupCrawlFrames();
   swimmerImage.addEventListener("load", setupSwimmerParts);
   if (swimmerImage.complete) setupSwimmerParts();
   $("#drop-button").addEventListener("click", startDrop);

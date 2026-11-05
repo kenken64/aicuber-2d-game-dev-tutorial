@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
 const storage = await mkdtemp(join(tmpdir(), 'godot-forge-leaderboard-test-'));
-const server = spawn(process.execPath, ['server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: '0', APP_STORAGE_DIR: storage, OPENAI_API_KEY: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+const server = spawn(process.execPath, ['server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: '0', APP_STORAGE_DIR: storage, OPENAI_API_KEY: '', MODULE_RESET_PASSCODE: 'test-reset-passcode' }, stdio: ['ignore', 'pipe', 'pipe'] });
 let output = '';
 let browser;
 try {
@@ -19,6 +19,10 @@ try {
   });
   browser = await chromium.launch({ channel: process.env.CHROME_CHANNEL || 'chrome', headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await page.route('**/items-spawning/images/forest-sword-explorer.png', async route => {
+    const body = await readFile(new URL('../../items-spawning/images/forest-sword-explorer.png', import.meta.url));
+    await route.fulfill({ status: 200, body, contentType: 'image/png', headers: { 'access-control-allow-origin': '*' } });
+  });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => {
@@ -92,10 +96,11 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.click('#tab-board');
   await page.click('#reset-module');
-  assert.equal(await page.locator('#reset-module').getAttribute('data-confirming'), 'true');
+  assert.equal(await page.locator('#module-reset-dialog').isVisible(), true);
   const resetResponse = page.waitForResponse(response => response.url().endsWith('/api/modules/game-leaderboard/reset') && response.ok());
   const resetNavigation = page.waitForNavigation({ waitUntil: 'load' });
-  await page.click('#reset-module');
+  await page.fill('#module-reset-passcode', 'test-reset-passcode');
+  await page.click('#module-reset-submit');
   await Promise.all([resetResponse, resetNavigation]);
   await page.waitForFunction(() => document.querySelector('#score-count')?.textContent === '0');
   assert.equal(await page.locator('#gold-count').textContent(), '0 / 10');

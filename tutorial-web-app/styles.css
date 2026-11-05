@@ -849,3 +849,11 @@ h2 {
     line-height: 2.1;
   }
 }
+
+/* Chapters 20–22 open after the first nineteen modules. */
+.nav-item.locked { opacity: .6; cursor: not-allowed; }
+.module-card.locked { opacity: .72; }
+.module-card.locked:hover { border-color: var(--line); box-shadow: none; transform: none; }
+.module-card .module-lock-reason { margin-top: 10px; color: var(--muted); font-size: 12px; }
+.module-card.locked button:disabled { opacity: .5; cursor: not-allowed; }
+.card-action.locked-action { font-size: 11px; cursor: not-allowed; }

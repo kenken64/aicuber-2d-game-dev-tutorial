@@ -7,7 +7,7 @@ const copy = {
 };
 // The quiz is followed by Godot setup and the final build step.
 Object.assign(copy.en, {
-  chapter: 'CHAPTER 18 / KNOWLEDGE CHECK', finalQuiz: 'KNOWLEDGE CHECK',
+  chapter: 'CHAPTER 19 / KNOWLEDGE CHECK', finalQuiz: 'KNOWLEDGE CHECK',
   retry: 'START NEW ATTEMPT', retryConfirm: 'CONFIRM NEW ATTEMPT',
   retryWarning: 'Click again to clear every answer and your quiz pass status.', retrySuccess: 'New quiz attempt started.',
   complete: 'COMPLETE QUIZ', completed: 'QUIZ COMPLETE ✓',
@@ -15,7 +15,7 @@ Object.assign(copy.en, {
   saved: (score, total) => `Quiz complete — ${score}/${total}. Learn Godot Web Editor is next.`,
 });
 Object.assign(copy.zh, {
-  chapter: '第 18 章 / 知识测验', finalQuiz: '知识测验',
+  chapter: '第 19 章 / 知识测验', finalQuiz: '知识测验',
   retry: '开始新一轮测验', retryConfirm: '确认重新开始',
   retryWarning: '再次点击将清除所有答案和测验通过状态。', retrySuccess: '已开始新一轮测验。',
   complete: '完成测验', completed: '测验已完成 ✓',
@@ -23,7 +23,7 @@ Object.assign(copy.zh, {
   saved: (score, total) => `测验已完成 — ${score}/${total}。下一站是“学习 Godot 网页编辑器”。`,
 });
 Object.assign(copy.ms, {
-  chapter: 'BAB 18 / SEMAKAN PENGETAHUAN', finalQuiz: 'SEMAKAN PENGETAHUAN',
+  chapter: 'BAB 19 / SEMAKAN PENGETAHUAN', finalQuiz: 'SEMAKAN PENGETAHUAN',
   retry: 'MULA CUBAAN BAHARU', retryConfirm: 'SAHKAN CUBAAN BAHARU',
   retryWarning: 'Klik sekali lagi untuk padam semua jawapan dan status lulus kuiz.', retrySuccess: 'Cubaan kuiz baharu bermula.',
   complete: 'LENGKAPKAN KUIZ', completed: 'KUIZ SELESAI ✓',
@@ -34,6 +34,7 @@ let currentLocale = copy[localStorage.getItem('godot-forge-locale')] ? localStor
 const quizList = document.querySelector("#quiz-list"), pageTabs = document.querySelector('#quiz-page-tabs'), previousPage = document.querySelector('#previous-page'), nextPage = document.querySelector('#next-page'), pageLabel = document.querySelector('#quiz-page-label'), scoreElement = document.querySelector("#score"), answeredElement = document.querySelector("#answered-count"), intro = document.querySelector("#quiz-intro"), result = document.querySelector("#quiz-result"), retry = document.querySelector("#retry"), complete = document.querySelector("#complete");
 const pageSize = 10;
 let questions = [], selected = [], score = 0, currentPage = 0;
+let quizCompleted = false, quizSaving = false;
 const checking = new Set();
 
 function applyLocale() {
@@ -60,7 +61,7 @@ function applyLocale() {
   previousPage.textContent = t.previous;
   nextPage.textContent = t.next;
   retry.textContent = retry.dataset.confirming === 'true' ? t.retryConfirm : t.retry;
-  complete.textContent = complete.disabled ? t.completed : t.complete;
+  complete.textContent = quizCompleted ? t.completed : t.complete;
   if (questions.length) intro.textContent = t.intro(questions.length, Math.ceil(questions.length * .75));
 }
 
@@ -92,6 +93,9 @@ function renderQuiz() {
   score = selected.reduce((total, answer) => total + (answer?.correct ? 1 : 0), 0);
   scoreElement.textContent = `${score} / ${questions.length || 40}`;
   answeredElement.textContent = `${selected.filter(Boolean).length} / ${questions.length || 40} ${t.answered}`;
+  const passed = questions.length > 0 && selected.length === questions.length && selected.every(Boolean) && score >= Math.ceil(questions.length * .75);
+  complete.disabled = !passed || quizCompleted || quizSaving || checking.size > 0;
+  complete.textContent = quizCompleted ? t.completed : t.complete;
   quizList.replaceChildren();
   pageTabs.replaceChildren();
   if (!questions.length) { const loading = document.createElement("p"); loading.className = "profile-empty"; loading.textContent = t.loading; quizList.append(loading); return; }
@@ -145,7 +149,10 @@ async function loadQuestions() {
     const payload = await response.json().catch(() => []);
     if (!response.ok || !Array.isArray(payload) || !payload.length) throw new Error(copy[locale].unavailable);
     const restored = await restoreQuizCheckpoint(payload, locale);
+    const progressResponse = await fetch(`/api/modules?learnerId=${encodeURIComponent(learnerId)}`).catch(() => null);
+    const progress = progressResponse?.ok ? await progressResponse.json() : [];
     if (locale !== currentLocale) return;
+    quizCompleted = Boolean(progress.find(module => module.slug === moduleSlug)?.completed);
     questions = payload; selected = restored.selected; currentPage = restored.page;
     applyLocale();
     renderQuiz();
@@ -171,15 +178,20 @@ function showResult() {
   const passMark = Math.ceil(questions.length * .75);
   const passed = score >= passMark;
   result.hidden = false; result.classList.toggle("failed", !passed);
-  result.textContent = passed ? t.passed(score, questions.length) : t.failed(score, questions.length, passMark);
-  complete.hidden = !passed;
+  result.textContent = quizCompleted ? t.saved(score, questions.length) : passed ? t.passed(score, questions.length) : t.failed(score, questions.length, passMark);
 }
 
 async function completeModule() {
-  complete.disabled = true;
-  const response = await fetch(`/api/modules/${moduleSlug}/progress`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ learnerId, completed: true }) });
-  if (response.ok) { complete.textContent = copy[currentLocale].completed; result.textContent = copy[currentLocale].saved(score, questions.length); }
-  else { complete.disabled = false; result.textContent = copy[currentLocale].saveError; }
+  if (complete.disabled) return;
+  quizSaving = true; renderQuiz();
+  let failed = false;
+  try {
+    const response = await fetch(`/api/modules/${moduleSlug}/progress`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ learnerId, completed: true }) });
+    if (!response.ok) throw new Error('Save failed');
+    quizCompleted = true;
+  } catch { failed = true; }
+  finally { quizSaving = false; renderQuiz(); }
+  if (failed) { result.hidden = false; result.textContent = copy[currentLocale].saveError; }
 }
 
 document.querySelector('#quiz-language-toggle').addEventListener('click', event => {
@@ -206,7 +218,7 @@ retry.addEventListener("click", async () => {
   try {
     const response = await fetch(`/api/quizzes/${moduleSlug}/retry`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId }) });
     if (!response.ok) throw new Error(copy[currentLocale].answerError);
-    selected = Array(questions.length).fill(null); currentPage = 0; result.hidden = true; complete.hidden = true; complete.disabled = false;
+    selected = Array(questions.length).fill(null); currentPage = 0; result.hidden = true; quizCompleted = false;
     window.showToast?.(copy[currentLocale].retrySuccess, 'success');
     renderQuiz(); window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) { result.hidden = false; result.classList.add('failed'); result.textContent = error.message; window.showToast?.(error.message, 'error'); }

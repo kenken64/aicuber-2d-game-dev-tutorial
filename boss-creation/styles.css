@@ -28,3 +28,9 @@
 .boss-library img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #101a16; }
 .boss-library span { display: block; padding: 9px; overflow-wrap: anywhere; }
 @media (max-width: 780px) { .boss-workspace, .boss-output { grid-template-columns: 1fr; } .production-heading { align-items: start; flex-direction: column; } .boss-actions { border-top: 1px solid var(--line); border-left: 0; } }
+
+.boss-workspace { align-items: start; }
+
+.guide-completion { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:0 0 22px; padding:16px 18px; border:1px solid var(--line); background:var(--panel); }
+.guide-completion p { flex:1; min-width:200px; margin:0; color:var(--muted); font-size:14px; }
+.guide-completion #complete-module { background:#c4f265; border-color:#c4f265; color:#142119; font-weight:700; }

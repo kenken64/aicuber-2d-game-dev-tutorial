@@ -36,6 +36,7 @@ try {
   assert.equal((await page.request.get(`${baseUrl}/game-physics/images/boulder.webp`)).status(), 200);
   assert.equal((await page.request.get(`${baseUrl}/game-physics/images/water-splash.webp`)).status(), 200);
   assert.equal((await page.request.get(`${baseUrl}/game-physics/images/swimmer.webp`)).status(), 200);
+  assert.equal((await page.request.get(`${baseUrl}/game-physics/swimmer-crawl-v2.webp`)).status(), 200);
   assert.match(await page.locator("#splash-prompt").textContent(), /genuinely transparent alpha background/);
   assert.match(await page.locator("#swimmer-prompt").textContent(), /same young woodland explorer/);
   assert.equal(await page.locator("#complete-module").isDisabled(), true);
@@ -44,10 +45,26 @@ try {
   const stage = page.locator("#physics-stage");
   await page.waitForFunction(() => Number(document.querySelector("#physics-stage")?.dataset.swimmerX) > 0);
   assert.ok(Number(await stage.getAttribute("data-swimmer-x")) < 480, "swimmer starts left of the boulder");
+  await page.waitForFunction(() => document.querySelector("#physics-stage").dataset.swimmerFrame === "0");
   await stage.click();
   await page.keyboard.down("ArrowRight");
+  const crawlMotion = await page.evaluate(async () => {
+    const seen = new Set();
+    const frontPull = [];
+    const end = performance.now() + 1500;
+    while (performance.now() < end) {
+      const stage = document.querySelector("#physics-stage");
+      seen.add(stage.dataset.swimmerFrame);
+      frontPull.push(Number(stage.dataset.swimmerFrontPull));
+      await new Promise(requestAnimationFrame);
+    }
+    return { frames: [...seen].sort(), min: Math.min(...frontPull), max: Math.max(...frontPull) };
+  });
+  assert.deepEqual(crawlMotion.frames, ["0", "1", "2", "3"], "crawl includes pull and recovery frames");
+  assert.ok(crawlMotion.min < .1 && crawlMotion.max > .8, "the forward arm also moves through its pull");
   await page.waitForFunction(() => Number(document.querySelector("#physics-stage").dataset.swimmerX) > 650);
   await page.keyboard.up("ArrowRight");
+  await page.waitForFunction(() => document.querySelector("#physics-stage").dataset.swimmerFrame === "0" && Number(document.querySelector("#physics-stage").dataset.swimmerFrontPull) < .05);
   assert.equal(await stage.getAttribute("data-swimmer-facing"), "right");
   await page.keyboard.down("ArrowDown");
   await page.waitForFunction(() => Number(document.querySelector("#physics-stage").dataset.swimmerDepth) > 90);

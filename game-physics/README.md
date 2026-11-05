@@ -1,6 +1,6 @@
 # Game Physics: boulder and water
 
-This module replaces the overview page with an interactive drop. Learners adjust height (2–8 m), boulder mass (20–120 kg), and gravity (4–15 m/s²), then watch the boulder enter a forest pool beside a controllable swimming explorer. The explorer starts on the left and can swim across the full pool: left/right arrows swim, up rises, and down dives. Separate arm and leg layers animate alternating freestyle strokes and kicks, with surface wakes and underwater bubbles. The page shows predicted fall time, live speed, impact energy, and dive depth; it supports slow motion and saves module completion after a drop. Click the pool to return keyboard focus to swimming after adjusting a slider.
+This module replaces the overview page with an interactive drop. Learners adjust height (2–8 m), boulder mass (20–120 kg), and gravity (4–15 m/s²), then watch the boulder enter a forest pool beside a controllable swimming explorer. The explorer starts on the left and can swim across the full pool: left/right arrows swim, up rises, and down dives. A reference-guided four-frame crawl cycle and separate leg layers animate the pull, above-water recovery, and flutter kick, with surface wakes and underwater bubbles. The page shows predicted fall time, live speed, impact energy, and dive depth; it supports slow motion and saves module completion after a drop. Click the pool to return keyboard focus to swimming after adjusting a slider.
 
 ## Physics model
 
@@ -10,7 +10,7 @@ These equations follow [OpenStax: Free Fall](https://openstax.org/books/universi
 
 ## Generated art
 
-The background, transparent boulder, and transparent splash were generated once with `gpt-image-2.5-sunburst` through the OpenAI Image API. The swimmer was edited from the existing Storyline Engine explorer with the same model, preserving the recognizable hood and teal scarf. The assets were optimized and converted to WebP for the page, with the transparent cutouts cropped to their content. The exact prompts are in [`art-prompts/`](art-prompts/) and can also be opened from the module page. The final browser assets are in [`images/`](images/). The page makes no image API call during a drop.
+The background, transparent boulder, and transparent splash were generated once with `gpt-image-2.5-sunburst` through the OpenAI Image API. The swimmer was edited from the existing Storyline Engine explorer with the same model, preserving the recognizable hood and teal scarf. The assets were optimized and converted to WebP for the page, with the transparent cutouts cropped to their content. The locally bundled `swimmer-crawl-v2.webp` depicts the pull and high-elbow recovery shown in the supplied [freestyle animation](https://blog.arenaswim.com/wp-content/uploads/2021/02/arena_crawl_blog_nologo.gif). The exact prompts for the original art are in [`art-prompts/`](art-prompts/) and can also be opened from the module page. The final browser assets are in [`images/`](images/). The page makes no image API call during a drop.
 
 [Official OpenAI Docs](https://developers.openai.com/api/docs/guides/image-generation) list Sunburst as an Image API model and document transparent PNG output. This project uses the same model by default for its other image-generation features.
 

@@ -72,7 +72,7 @@
 
   document.addEventListener('click', event => {
     const button = event.target.closest('button');
-    if (!button || button.disabled || button.matches('.reset-module-button')) return;
+    if (!button || button.disabled || button.matches('.reset-module-button, .completion-hint-help')) return;
     const id = button.id;
     if (isQuizPage && id === 'retry') return; // The quiz provides its own localized two-click reset feedback.
     const label = button.textContent.trim().replace(/\s+/g, ' ');

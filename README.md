@@ -15,13 +15,13 @@ npm ci
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The tutorial and its playable modules can run without configuring AI services. To use image generation and storyline voice generation, set `OPENAI_API_KEY` in `tutorial-web-app/.env` and restart the app.
+Open [http://localhost:3000](http://localhost:3000). The tutorial and its playable modules can run without configuring AI services. To allow module resets, set a private `MODULE_RESET_PASSCODE` in `tutorial-web-app/.env` and restart the app; without it, resets are unavailable. To use image generation and storyline voice generation, set `OPENAI_API_KEY` in `tutorial-web-app/.env` and restart the app.
 
 For text and design requests, set `OPENROUTER_API_KEY` and optionally `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`) in `tutorial-web-app/.env` or Railway service variables. The server calls OpenRouter directly. Image and voice generation still use `OPENAI_API_KEY`.
 
 ## Modules and project layout
 
-The [web app](tutorial-web-app/README.md) serves the landing page, API, and 22 modules. The sibling module folders contain lessons for character and asset creation, storyline and tilemap design, spawning and AI, controls and physics, achievements and leaderboards, local and online multiplayer, the final cutscene, credits, a quiz, Godot setup, and the final game. See the web app README for the full module list and API details.
+The [web app](tutorial-web-app/README.md) serves the landing page, API, and 22 modules. Complete modules 1–19, including passing and completing the quiz, to unlock modules 20–22. Module 22 is a bonus lesson. Reopening a prerequisite locks those later modules again without deleting their saved progress. The sibling module folders contain lessons for character and asset creation, storyline and tilemap design, spawning and AI, controls and physics, achievements and leaderboards, local and online multiplayer, the final cutscene, credits, a quiz, Godot setup, and the final game. See the web app README for the full module list and API details.
 
 | Path | Purpose |
 | --- | --- |
@@ -45,6 +45,7 @@ From `tutorial-web-app/`:
 ```sh
 npm test
 npm run test:modules
+npm run test:module-unlock
 npm run test:storyline-voice
 npm run test:marketplace-auth
 ```

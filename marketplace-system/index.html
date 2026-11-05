@@ -11,10 +11,12 @@
     <title>Marketplace System · Godot Forge</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/module-overview.css" />
-    <link rel="stylesheet" href="/marketplace-system/marketplace.css" />
-    <script src="/module-overview.js" defer></script>
+    <link rel="stylesheet" href="/marketplace-system/marketplace.css?v=20261101-completion2" />
+    <script src="/module-overview.js?v=20261101-market-complete" defer></script>
     <script src="/marketplace-system/marketplace.js" defer></script>
-  </head>
+    <link rel="stylesheet" href="/module-completion.css?v=20261102-tooltips" />
+    <script src="/completion-hints.js?v=20261102" defer></script>
+</head>
   <body data-module="marketplace-system">
     <main class="module-overview">
       <header class="module-header">
@@ -26,6 +28,10 @@
         <p class="market-kicker" data-market="introEyebrow">PLAYER ECONOMY / SHOP DEMO</p>
         <h1 id="title">Marketplace System</h1>
         <p id="description"></p>
+      </section>
+      <section class="completion-panel" aria-label="Module completion">
+        <div><p id="completion-hint">Mark this lesson complete when you are ready.</p><p id="status" role="status"></p></div>
+        <button id="complete" class="primary-button" type="button" disabled>COMPLETE MODULE</button>
       </section>
       <section><h2 data-copy="topics">Planned topics</h2><ol id="topics"></ol></section>
       <section class="marketplace" aria-labelledby="market-title">
@@ -59,8 +65,6 @@
         <div id="asset-prompts" class="prompt-grid"></div>
       </details>
       <p id="overview-notice" data-copy="notice">This module overview is ready. Interactive lessons are coming next.</p>
-      <button id="complete" class="primary-button" disabled></button>
-      <p id="status" role="status"></p>
     </main>
   </body>
 </html>

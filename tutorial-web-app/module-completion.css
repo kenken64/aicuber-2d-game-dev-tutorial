@@ -1,0 +1,48 @@
+/* Shared completion control for lesson pages. */
+:where(#lesson-mark-complete, #complete-module, #complete-story, body[data-module="marketplace-system"] #complete, body[data-module="math-stem-physics-quiz"] #complete, body[data-module="setup-godot-with-ai"] #complete, body[data-module="microbit-gamepad"] #complete) {
+  box-sizing: border-box !important;
+  width: 190px !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 10px 14px !important;
+  border: 1px solid #c4f265 !important;
+  border-radius: 0 !important;
+  background: #c4f265 !important;
+  color: #142119 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: .04em !important;
+  text-align: center !important;
+  cursor: pointer;
+}
+:where(#lesson-mark-complete, #complete-module, #complete-story, body[data-module="marketplace-system"] #complete, body[data-module="math-stem-physics-quiz"] #complete, body[data-module="setup-godot-with-ai"] #complete, body[data-module="microbit-gamepad"] #complete):disabled {
+  border-color: #50665a !important;
+  background: #30483a !important;
+  color: #b2c3b5 !important;
+  opacity: 1 !important;
+  filter: none !important;
+  cursor: not-allowed !important;
+}
+:where(#lesson-mark-complete, #complete-module, #complete-story, body[data-module="marketplace-system"] #complete, body[data-module="math-stem-physics-quiz"] #complete, body[data-module="setup-godot-with-ai"] #complete, body[data-module="microbit-gamepad"] #complete):hover:not(:disabled) { filter: brightness(1.09); }
+
+.completion-hint-wrap { position: relative; display: inline-flex; flex: 0 1 auto; width: 190px; max-width: 100%; vertical-align: middle; }
+.completion-hint-wrap .completion-hint-help {
+  position: absolute !important; top: -9px !important; right: -9px !important; z-index: 4;
+  display: grid !important; place-items: center !important;
+  box-sizing: border-box !important; width: 22px !important; min-width: 22px !important; max-width: 22px !important;
+  height: 22px !important; min-height: 22px !important; padding: 0 !important;
+  border: 1px solid #c4f265 !important; border-radius: 50% !important;
+  background: #182a22 !important; color: #c4f265 !important;
+  font: 700 13px/1 system-ui, sans-serif !important; opacity: 1 !important; cursor: help !important;
+}
+.completion-hint-wrap .completion-hint-help:focus-visible { outline: 3px solid #9c8cff !important; outline-offset: 2px; }
+.completion-requirement-tooltip {
+  position: fixed; z-index: 10050; box-sizing: border-box; width: min(300px, calc(100vw - 16px));
+  padding: 12px 14px; border: 1px solid #8cae83; background: #14251d; color: #f0f8eb;
+  box-shadow: 0 8px 24px #0008; font: 14px/1.45 system-ui, sans-serif; text-align: left;
+  overflow-wrap: anywhere; pointer-events: none;
+}
+.completion-requirement-tooltip[hidden] { display: none !important; }

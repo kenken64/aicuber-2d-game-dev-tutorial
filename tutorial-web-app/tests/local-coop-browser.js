@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
 const storage = await mkdtemp(join(tmpdir(), 'godot-forge-coop-test-'));
-const server = spawn(process.execPath, ['server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: '0', APP_STORAGE_DIR: storage, OPENAI_API_KEY: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+const server = spawn(process.execPath, ['server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: '0', APP_STORAGE_DIR: storage, OPENAI_API_KEY: '', MODULE_RESET_PASSCODE: 'test-reset-passcode' }, stdio: ['ignore', 'pipe', 'pipe'] });
 let output = '';
 let browser;
 try {
@@ -78,7 +78,8 @@ try {
   await page.click('#reset-module');
   const resetResponse = page.waitForResponse(response => response.url().endsWith('/api/modules/local-coop/reset') && response.ok());
   const resetNavigation = page.waitForNavigation({ waitUntil: 'load' });
-  await page.click('#reset-module');
+  await page.fill('#module-reset-passcode', 'test-reset-passcode');
+  await page.click('#module-reset-submit');
   await Promise.all([resetResponse, resetNavigation]);
   await page.waitForFunction(() => document.body.dataset.coopReady === 'true');
   assert.equal(await page.locator('#p1-coins').textContent(), '0');

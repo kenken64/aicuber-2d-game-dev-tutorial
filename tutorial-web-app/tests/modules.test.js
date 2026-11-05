@@ -15,7 +15,7 @@ const moduleSequence = ["character-creation", "game-assets-creation", "boss-crea
 async function startServer(storage) {
   const child = spawn(process.execPath, ["server.js"], {
     cwd: new URL("..", import.meta.url),
-    env: { ...process.env, PORT: "0", APP_STORAGE_DIR: storage, OPENAI_API_KEY: "" },
+    env: { ...process.env, PORT: "0", APP_STORAGE_DIR: storage, OPENAI_API_KEY: "", MODULE_RESET_PASSCODE: 'test-reset-passcode' },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "", errors = "";
@@ -203,6 +203,22 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     assert.equal(bossManifest.kind, 'boss');
     assert.deepEqual(bossManifest.animations.map(row => row.frames.length), [1, 4, 4, 4, 4, 4, 4]);
     assert.deepEqual(bossManifest.unavailable, []);
+    // Later lessons unlock only after this learner completes all prerequisites.
+    for (const module of modules.filter(item => item.level <= 18)) {
+      const response = await fetch(`${server.url}/api/modules/${module.slug}/progress`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed: true }),
+      });
+      assert.equal(response.status, 200);
+    }
+    for (const question of quizQuestionBank) {
+      const response = await fetch(`${server.url}/api/quizzes/math-stem-physics-quiz/answer`, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, questionId: question.id, option: question.correctOption }),
+      });
+      assert.equal(response.status, 200);
+    }
+    assert.equal((await fetch(`${server.url}/api/modules/math-stem-physics-quiz/progress`, {
+      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed: true }),
+    })).status, 200);
     await page.route('https://makecode.microbit.org/?controller=1&ws=browser&noproject=1', route => route.fulfill({
       contentType: 'text/html', body: `<script>
         window.addEventListener('message', event => {
@@ -275,7 +291,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
             await page.locator("#playtest-stage canvas").waitFor();
             assert.match(await page.locator("#controls-prompt").textContent(), /move left, move right, jump, crouch\/roll, and attack|向左移动|gerak ke kiri/);
             assert.match(await page.locator("#game-prompt").textContent(), /four collectible crystals|四枚可收集水晶|empat kristal/);
-            assert.equal(await page.locator("#complete-module").isDisabled(), true);
+            assert.equal(await page.locator("#complete-module").isEnabled(), true);
             await page.click('.pad-control[data-index="0"]');
             await page.click("#open-settings");
             assert.equal(await page.locator("#mapping-list .mapping-row").count(), 5);
@@ -338,14 +354,11 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
             assert.equal(await page.locator(".credit-entry").count(), 7);
             assert.match(await page.locator("#credits-prompt").textContent(), /fictional contributor names|虚构贡献者姓名|nama penyumbang rekaan/);
             assert.match(await page.locator("#image-prompt").textContent(), /OpenAI GPT Image 2\.5|OpenAI GPT Image 2\.5/);
-            if (await page.locator("#complete-module").isEnabled()) {
-              await page.click("#restart-roll");
-              await page.waitForFunction(() => document.querySelector("#complete-module").disabled);
-            }
+            await page.click("#restart-roll");
             const initialScene = await page.locator("#game-screenshot").getAttribute("src");
             await page.click("#next-screenshot");
             await page.waitForFunction(previous => document.querySelector("#game-screenshot").getAttribute("src") !== previous, initialScene);
-            assert.equal(await page.locator("#complete-module").isDisabled(), true);
+            assert.equal(await page.locator("#complete-module").isEnabled(), true);
             await page.click("#skip-roll");
             await page.waitForFunction(() => document.querySelector("#sequence-status").textContent !== "CREDITS ROLLING");
             await page.waitForFunction(() => !document.querySelector("#complete-module").disabled);
@@ -393,11 +406,13 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
           await page.click('#reset-module');
           const resetRequest = page.waitForResponse(response => response.url().includes('/api/modules/marketplace-system/reset') && response.ok());
           const resetNavigation = page.waitForNavigation({ waitUntil: 'load' });
-          await page.click('#reset-module');
+          await page.fill('#module-reset-passcode', 'test-reset-passcode');
+          await page.click('#module-reset-submit');
           await Promise.all([resetRequest, resetNavigation]);
           assert.equal(await page.locator('#gold-count').textContent(), '300');
           assert.equal(await page.locator('#dust-count').textContent(), '0');
           assert.equal(await page.locator('#inventory-count').textContent(), '1');
+          await fetch(`${server.url}/api/modules/marketplace-system/progress`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed: true }) });
         }
         assert.equal(await page.locator("html").getAttribute("lang"), locale === "zh" ? "zh-CN" : locale);
         await page.setViewportSize({ width: 390, height: 844 });
@@ -407,6 +422,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
         await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 22);
       }
     }
+    await fetch(`${server.url}/api/modules/game-controls/progress`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed: false }) });
     await page.goto(`${server.url}/game-controls/`);
     await page.click('.pad-control[data-index="0"]');
     await page.click("#open-settings");
@@ -416,6 +432,10 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     await page.click("#complete-module");
     const completed = await (await fetch(`${server.url}/api/modules?learnerId=${learnerId}`)).json();
     assert.equal(completed.find(module => module.slug === "game-controls").completed, true);
+    // The reset checks below start with asset creation incomplete.
+    await fetch(`${server.url}/api/modules/game-assets-creation/progress`, {
+      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed: false }),
+    });
     await server.stop();
     server = await startServer(storage);
     const reloaded = await (await fetch(`${server.url}/api/modules?learnerId=${learnerId}`)).json();
@@ -445,9 +465,10 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     await page.waitForFunction(expected => document.querySelector('#progress-value').textContent === expected,
       `${Math.round((completedBeforeAssets + 1) / reloaded.length * 100)}%`);
     await page.click('#module-game-assets-creation .reset-module-button');
-    assert.equal(await page.locator('#module-game-assets-creation .reset-module-button').getAttribute('data-confirming'), 'true');
+    assert.equal(await page.locator('#module-reset-dialog').isVisible(), true);
+    await page.fill('#module-reset-passcode', 'test-reset-passcode');
     assert.ok((await (await fetch(`${server.url}/api/modules/game-assets-creation/checkpoint?learnerId=${learnerId}`)).json()).state);
-    await page.click('#module-game-assets-creation .reset-module-button');
+    await page.click('#module-reset-submit');
     await page.waitForFunction(expected => document.querySelector('#progress-value').textContent === expected,
       `${Math.round(completedBeforeAssets / reloaded.length * 100)}%`);
     assert.equal((await (await fetch(`${server.url}/api/modules/game-assets-creation/checkpoint?learnerId=${learnerId}`)).json()).state, null);
@@ -482,10 +503,14 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     }, learnerId);
     await lateSave;
     await page.click('#reset-module');
-    assert.equal(await page.locator('#reset-module').getAttribute('data-confirming'), 'true');
-    await page.click('#reset-module');
+    assert.equal(await page.locator('#module-reset-dialog').isVisible(), true);
+    await page.fill('#module-reset-passcode', 'test-reset-passcode');
+    await page.click('#module-reset-submit');
     await page.waitForFunction(() => document.querySelector('#creative-prompt').value === '');
     assert.equal((await (await fetch(`${server.url}/api/modules/game-assets-creation/checkpoint?learnerId=${learnerId}`)).json()).state, null);
+    await fetch(`${server.url}/api/quizzes/math-stem-physics-quiz/retry`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId }),
+    });
     await fetch(`${server.url}/api/modules/math-stem-physics-quiz/checkpoint`, {
       method: 'PUT', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ learnerId, state: { currentPage: 2, answers: { [quizQuestions[0].id]: { option: 0, correct: true, correctOption: 0, explanation: 'Saved answer' } } } }),
@@ -494,9 +519,10 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     await page.goto(`${server.url}/math-stem-physics-quiz/`);
     await page.waitForFunction(() => document.querySelector('#quiz-page-label').textContent.includes('PAGE 3 OF 4'));
     assert.equal(await page.locator('#answered-count').textContent(), '0 / 40 answered');
-    assert.equal(await page.locator('#complete').isHidden(), true);
+    assert.equal(await page.locator('#complete').isDisabled(), true);
     await page.click('#reset-module');
-    await page.click('#reset-module');
+    await page.fill('#module-reset-passcode', 'test-reset-passcode');
+    await page.click('#module-reset-submit');
     await page.waitForFunction(() => document.querySelector('#quiz-page-label').textContent.includes('PAGE 1 OF 4') && document.querySelector('#answered-count').textContent === '0 / 40 answered');
     assert.equal((await (await fetch(`${server.url}/api/modules/math-stem-physics-quiz/checkpoint?learnerId=${learnerId}`)).json()).state, null);
     await page.goto(server.url);
@@ -512,7 +538,8 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     for (const [slug, keys] of localState) {
       await page.click(`#module-${slug} .reset-module-button`);
       const response = page.waitForResponse(item => item.url().includes(`/api/modules/${slug}/reset`) && item.ok());
-      await page.click(`#module-${slug} .reset-module-button`);
+      await page.fill('#module-reset-passcode', 'test-reset-passcode');
+      await page.click('#module-reset-submit');
       await response;
       await page.waitForFunction(names => names.every(key => localStorage.getItem(key) === null), keys);
       assert.equal(await page.evaluate(() => localStorage.getItem('godot-forge-learner-id')), learnerId);
@@ -535,7 +562,8 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     await delayedCompletion;
     await page.click('#module-game-leaderboard .reset-module-button');
     const leaderboardReset = page.waitForResponse(response => response.url().endsWith('/api/modules/game-leaderboard/reset') && response.ok());
-    await page.click('#module-game-leaderboard .reset-module-button');
+    await page.fill('#module-reset-passcode', 'test-reset-passcode');
+    await page.click('#module-reset-submit');
     await leaderboardReset;
     assert.equal((await (await fetch(`${server.url}/api/modules?learnerId=${learnerId}`)).json()).find(module => module.slug === 'game-leaderboard').completed, false);
     assert.deepEqual(errors, []);

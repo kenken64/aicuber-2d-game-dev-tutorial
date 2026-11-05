@@ -27,6 +27,9 @@ const chatLog = document.querySelector("#chat-log");
 const choiceList = document.querySelector("#choice-list");
 const answerForm = document.querySelector("#answer-form");
 const answerInput = document.querySelector("#answer-input");
+const answerRow = document.querySelector("#answer-row");
+const previousStep = document.querySelector("#previous-step");
+const editAnswers = document.querySelector("#edit-answers");
 const stepCount = document.querySelector("#step-count");
 const directionStatus = document.querySelector("#direction-status");
 const directionEmpty = document.querySelector("#direction-empty");
@@ -115,7 +118,7 @@ async function restoreCheckpoint() {
   if (!state || typeof state !== "object") return;
   creativePrompt.value = String(state.creativePrompt || "");
   Object.assign(answers, state.answers && typeof state.answers === "object" ? state.answers : {});
-  currentStep = Math.min(steps.length, Number(state.currentStep) || Object.keys(answers).length);
+  currentStep = Math.max(0, Math.min(steps.length, Number.isInteger(state.currentStep) ? state.currentStep : Object.keys(answers).length));
   direction = state.direction && typeof state.direction === "object" ? state.direction : null;
   selectedCategory = ["tileset", "props", "pickups", "ui"].includes(state.selectedCategory) ? state.selectedCategory : "tileset";
   generatedAssets = state.generatedAssets && typeof state.generatedAssets === "object" ? state.generatedAssets : {};
@@ -138,46 +141,60 @@ function addMessage(role, text) {
 }
 
 function renderGuide() {
+  const step = steps[currentStep];
   chatLog.replaceChildren();
-  addMessage("bot", "Let’s make an asset pack that feels like one world, not a pile of unrelated images.");
-  steps.forEach((step, index) => {
-    if (answers[step.field]) {
-      addMessage("bot", step.prompt);
-      addMessage("user", answers[step.field]);
-    }
-    if (index === currentStep && currentStep < steps.length) addMessage("bot", step.prompt);
-  });
-  if (currentStep === steps.length) addMessage("bot", "Your visual brief is ready. Build the asset direction, then generate one category at a time.");
-  chatLog.scrollTop = chatLog.scrollHeight;
+  addMessage("bot", step ? step.prompt : "Your visual brief is ready. Build the asset direction, then generate one category at a time.");
   stepCount.textContent = `${String(Math.min(currentStep + 1, steps.length)).padStart(2, "0")} / ${String(steps.length).padStart(2, "0")}`;
+  answerRow.hidden = !step;
+  editAnswers.hidden = Boolean(step);
+  editAnswers.disabled = busy;
+  previousStep.disabled = busy || currentStep === 0;
+  answerInput.value = step ? answers[step.field] || "" : "";
+  renderChoices();
+  updateBuildButton();
+}
+
+function updateBuildButton() {
+  buildDirectionButton.disabled = busy || !steps.every((step) => Boolean(answers[step.field])) || (currentStep < steps.length && !answerInput.value.trim());
+}
+
+function renderChoices() {
+  const step = steps[currentStep];
   choiceList.replaceChildren();
-  if (currentStep < steps.length) {
-    steps[currentStep].choices.forEach((choice) => {
-      const button = document.createElement("button");
-      button.className = "choice-button";
-      button.type = "button";
-      button.textContent = choice;
-      button.addEventListener("click", () => submitAnswer(choice));
-      choiceList.append(button);
-    });
+  if (!step) return;
+  step.choices.forEach((choice) => {
+    const button = document.createElement("button");
+    button.className = "choice-button";
+    button.type = "button";
+    button.textContent = choice;
+    button.disabled = busy;
+    const selected = answerInput.value.trim() === choice;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+    button.addEventListener("click", () => { answerInput.value = choice; renderChoices(); updateBuildButton(); });
+    choiceList.append(button);
+  });
+}
+
+function commitAnswer(step, answer) {
+  if (answers[step.field] && answers[step.field] !== answer) {
+    direction = null;
+    generatedAssets = {};
+    showAsset(null);
+    updateGenerateButton();
+    directionStatus.textContent = "WAITING";
+    directionEmpty.hidden = false;
+    assetDirectionElement.replaceChildren();
+    productionWorkspace.hidden = true;
   }
-  buildDirectionButton.disabled = busy || currentStep !== steps.length;
+  answers[step.field] = answer;
 }
 
 function submitAnswer(value) {
   const answer = value.trim();
-  if (!answer || busy || currentStep >= steps.length) return;
-  answers[steps[currentStep].field] = answer;
+  if (!answer || busy || currentStep >= steps.length) { if (!answer && !busy) answerInput.focus(); return; }
+  commitAnswer(steps[currentStep], answer);
   currentStep += 1;
-  answerInput.value = "";
-  direction = null;
-  generatedAssets = {};
-  showAsset(null);
-  updateGenerateButton();
-  directionStatus.textContent = "WAITING";
-  directionEmpty.hidden = false;
-  assetDirectionElement.replaceChildren();
-  productionWorkspace.hidden = true;
   renderGuide();
   saveCheckpoint();
 }
@@ -352,11 +369,18 @@ async function loadLibrary() {
 }
 
 async function toggleCompletion() {
+  if (busy || completeModuleButton.disabled) return;
   const completed = completeModuleButton.dataset.completed !== "true";
-  const response = await fetch(`/api/modules/${moduleSlug}/progress`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ learnerId, completed }) });
-  if (!response.ok) return;
-  completeModuleButton.dataset.completed = String(completed);
-  completeModuleButton.textContent = completed ? "REOPEN MODULE" : "MARK MODULE COMPLETE";
+  const status = document.querySelector('#guide-completion-status');
+  completeModuleButton.disabled = true;
+  try {
+    const response = await fetch(`/api/modules/${moduleSlug}/progress`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ learnerId, completed }) });
+    if (!response.ok) throw new Error('Save failed');
+    completeModuleButton.dataset.completed = String(completed);
+    completeModuleButton.textContent = completed ? "REOPEN MODULE" : "MARK MODULE COMPLETE";
+    status.textContent = completed ? 'Module completed.' : 'Progress saved.';
+  } catch { status.textContent = 'Could not save progress. Please try again.'; }
+  finally { completeModuleButton.disabled = false; }
 }
 
 answerForm.addEventListener("submit", (event) => { event.preventDefault(); submitAnswer(answerInput.value); });
@@ -377,7 +401,14 @@ loadTemplateButton.addEventListener("click", () => {
   renderGuide();
   saveCheckpoint();
 });
-buildDirectionButton.addEventListener("click", buildDirection);
+previousStep.addEventListener("click", () => { if (!busy && currentStep > 0) { currentStep--; renderGuide(); saveCheckpoint(); } });
+editAnswers.addEventListener("click", () => { if (!busy) { currentStep = 0; renderGuide(); saveCheckpoint(); } });
+answerInput.addEventListener("input", () => { renderChoices(); updateBuildButton(); });
+buildDirectionButton.addEventListener("click", () => {
+  const step = steps[currentStep];
+  if (step) { const answer = answerInput.value.trim(); if (!answer) { answerInput.focus(); return; } commitAnswer(step, answer); saveCheckpoint(); }
+  buildDirection();
+});
 document.querySelector("#copy-prompt").addEventListener("click", async () => { await navigator.clipboard?.writeText(generatedPrompt.textContent); });
 categoryList.addEventListener("click", (event) => { const category = event.target.closest("button")?.dataset.category; if (category) selectCategory(category); });
 generateAssetButton.addEventListener("click", generateAsset);
@@ -389,3 +420,5 @@ renderGuide();
 loadLibrary();
 restoreCheckpoint().finally(() => { checkpointReady = true; });
 checkGenerationReadiness();
+
+fetch(`/api/modules?learnerId=${encodeURIComponent(learnerId)}`).then(response => response.ok ? response.json() : []).then(modules => { const item = modules.find(module => module.slug === moduleSlug); if (!item) return; completeModuleButton.dataset.completed = String(item.completed); completeModuleButton.textContent = item.completed ? 'REOPEN MODULE' : 'MARK MODULE COMPLETE'; document.querySelector('#guide-completion-status').textContent = item.completed ? 'Module completed.' : ''; completeModuleButton.disabled = false; }).catch(() => { document.querySelector('#guide-completion-status').textContent = 'Could not load progress. Please refresh.'; });

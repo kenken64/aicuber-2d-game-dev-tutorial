@@ -16,6 +16,7 @@ const templates = {
 const $ = (selector) => document.querySelector(selector);
 const creativePrompt = $("#creative-prompt"), templateSelect = $("#boss-template"), chatLog = $("#chat-log"), choiceList = $("#choice-list"), answerForm = $("#answer-form"), answerInput = $("#answer-input"), stepCount = $("#step-count"), directionStatus = $("#direction-status"), directionEmpty = $("#direction-empty"), bossDirection = $("#boss-direction"), generatedPrompt = $("#generated-prompt"), buildButton = $("#build-direction"), production = $("#production-workspace"), preview = $("#boss-preview"), playerCanvas = $("#boss-animation-preview"), playerContext = $("#boss-animation-preview").getContext("2d"), animationLabel = $(".boss-animation-label"), animationSelect = $("#boss-animation-select"), playAnimationButton = $("#play-boss-animation"), placeholder = $("#boss-placeholder"), status = $("#generation-status"), generateBossButton = $("#generate-boss"), download = $("#download-boss"), saveToFinalGameButton = $("#save-boss-to-final-game"), library = $("#boss-library"), libraryCount = $("#library-count"), completeButton = $("#complete-module");
 const answers = {};
+const answerRow = $("#answer-row"), previousStep = $("#previous-step"), editAnswers = $("#edit-answers");
 let currentStep = 0, direction = null, busy = false;
 let generatedBoss = null, bossReplacementTimer = null, selectedAnimation = "idle", isAnimationPlaying = true;
 const bossAnimations = ["idle", "walk", "run", "attack", "hurt", "death", "enrage"];
@@ -132,19 +133,54 @@ function drawBossAnimation(now) {
   playerContext.fillText(`${selectedAnimation.toUpperCase()} / ${frameIndex + 1}`, 12, 246);
 }
 function animationLoop(now) { drawBossAnimation(now); window.requestAnimationFrame(animationLoop); }
-async function restoreCheckpoint() { const response = await fetch(`/api/modules/${moduleSlug}/checkpoint?learnerId=${encodeURIComponent(learnerId)}`).catch(() => null), checkpoint = response?.ok ? await response.json() : null, state = checkpoint?.state; if (!state || typeof state !== "object") return; creativePrompt.value = String(state.creativePrompt || ""); Object.assign(answers, state.answers && typeof state.answers === "object" ? state.answers : {}); currentStep = Math.min(steps.length, Number(state.currentStep) || Object.keys(answers).length); direction = state.direction && typeof state.direction === "object" ? state.direction : null; generatedBoss = state.generatedBoss && typeof state.generatedBoss === "object" ? state.generatedBoss : null; if (direction) { directionStatus.textContent = "RESUMED"; renderDirection(); production.hidden = false; showBoss(generatedBoss); status.textContent = "Resumed your saved boss direction and concept."; } renderGuide(); }
+async function restoreCheckpoint() { const response = await fetch(`/api/modules/${moduleSlug}/checkpoint?learnerId=${encodeURIComponent(learnerId)}`).catch(() => null), checkpoint = response?.ok ? await response.json() : null, state = checkpoint?.state; if (!state || typeof state !== "object") return; creativePrompt.value = String(state.creativePrompt || ""); Object.assign(answers, state.answers && typeof state.answers === "object" ? state.answers : {}); currentStep = Math.max(0, Math.min(steps.length, Number.isInteger(state.currentStep) ? state.currentStep : Object.keys(answers).length)); direction = state.direction && typeof state.direction === "object" ? state.direction : null; generatedBoss = state.generatedBoss && typeof state.generatedBoss === "object" ? state.generatedBoss : null; if (direction) { directionStatus.textContent = "RESUMED"; renderDirection(); production.hidden = false; showBoss(generatedBoss); status.textContent = "Resumed your saved boss direction and concept."; } renderGuide(); }
 
 function addMessage(role, text) { const message = document.createElement("div"), label = document.createElement("span"), body = document.createElement("div"); message.className = `chat-message ${role}`; label.className = "message-label"; label.textContent = role === "user" ? "YOU" : "GODOT FORGE"; body.className = "message-body"; body.textContent = text; message.append(label, body); chatLog.append(message); }
 function renderGuide() {
-  chatLog.replaceChildren(); addMessage("bot", "A great boss is a promise: this fight will be worth the climb.");
-  steps.forEach((step, index) => { if (answers[step.field]) { addMessage("bot", step.prompt); addMessage("user", answers[step.field]); } if (index === currentStep && currentStep < steps.length) addMessage("bot", step.prompt); });
-  if (currentStep === steps.length) addMessage("bot", "The threat is defined. Forge its direction, then bring the final encounter to life.");
-  chatLog.scrollTop = chatLog.scrollHeight; stepCount.textContent = `${String(Math.min(currentStep + 1, steps.length)).padStart(2, "0")} / ${String(steps.length).padStart(2, "0")}`;
-  choiceList.replaceChildren();
-  if (currentStep < steps.length) steps[currentStep].choices.forEach((choice) => { const button = document.createElement("button"); button.className = "choice-button"; button.type = "button"; button.textContent = choice; button.addEventListener("click", () => submit(choice)); choiceList.append(button); });
-  buildButton.disabled = busy || currentStep !== steps.length;
+  const step = steps[currentStep];
+  chatLog.replaceChildren();
+  addMessage("bot", step ? step.prompt : "The threat is defined. Forge its direction, then bring the final encounter to life.");
+  stepCount.textContent = `${String(Math.min(currentStep + 1, steps.length)).padStart(2, "0")} / ${String(steps.length).padStart(2, "0")}`;
+  answerRow.hidden = !step;
+  editAnswers.hidden = Boolean(step);
+  editAnswers.disabled = busy;
+  previousStep.disabled = busy || currentStep === 0;
+  answerInput.value = step ? answers[step.field] || "" : "";
+  renderChoices();
+  updateBuildButton();
 }
-function submit(value) { const answer = value.trim(); if (!answer || busy || currentStep >= steps.length) return; answers[steps[currentStep].field] = answer; currentStep += 1; answerInput.value = ""; direction = null; generatedBoss = null; showBoss(null); directionStatus.textContent = "WAITING"; directionEmpty.hidden = false; bossDirection.replaceChildren(); production.hidden = true; renderGuide(); saveCheckpoint(); }
+function updateBuildButton() { buildButton.disabled = busy || !steps.every((step) => Boolean(answers[step.field])) || (currentStep < steps.length && !answerInput.value.trim()); }
+function renderChoices() {
+  const step = steps[currentStep];
+  choiceList.replaceChildren();
+  if (!step) return;
+  step.choices.forEach((choice) => {
+    const button = document.createElement("button");
+    button.className = "choice-button";
+    button.type = "button";
+    button.textContent = choice;
+    button.disabled = busy;
+    const selected = answerInput.value.trim() === choice;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+    button.addEventListener("click", () => { answerInput.value = choice; renderChoices(); updateBuildButton(); });
+    choiceList.append(button);
+  });
+}
+function commitAnswer(step, answer) {
+  if (answers[step.field] && answers[step.field] !== answer) {
+    direction = null; generatedBoss = null; showBoss(null); directionStatus.textContent = "WAITING";
+    directionEmpty.hidden = false; bossDirection.replaceChildren(); production.hidden = true;
+  }
+  answers[step.field] = answer;
+}
+function submit(value) {
+  const answer = value.trim();
+  if (!answer || busy || currentStep >= steps.length) { if (!answer && !busy) answerInput.focus(); return; }
+  commitAnswer(steps[currentStep], answer);
+  currentStep++; renderGuide(); saveCheckpoint();
+}
+
 function setBusy(value, message = "") { busy = value; document.querySelectorAll("button, input, select, textarea").forEach((el) => { el.disabled = value; }); if (message) status.textContent = message; renderGuide(); }
 function parseJson(text) { const objectText = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] || text.match(/\{[\s\S]*\}/)?.[0]; if (!objectText) throw new Error("Codex did not return a boss direction. Please try again."); try { return JSON.parse(objectText); } catch { throw new Error("Codex returned an invalid boss direction. Please try again."); } }
 function directionPrompt() { return `Create a production-ready 2D game boss direction. The boss must be iconic, imposing, stylish, and badass without graphic gore. Return ONLY valid JSON in this exact shape:\n{"name":"...","archetype":"...","arena":"...","weapon":"...","silhouette":"...","phases":"...","palette":["#RRGGBB","#RRGGBB","#RRGGBB","#RRGGBB"],"artDirection":"..."}\nStudent idea: ${creativePrompt.value.trim() || "No separate idea."}\nGuided answers: ${JSON.stringify(answers)}\nMake the silhouette, weapon, pose, power source, and phase escalation concrete. Avoid cute, generic, harmless, or copyrighted designs.`; }
@@ -196,9 +232,32 @@ async function repairAnimations() {
 repairAnimationButton.addEventListener('click', repairAnimations);
 async function saveBossToFinalGame() { if (!generatedBoss?.assetUrl || busy) return; setBusy(true, "Saving boss sprite sheet to Final Game…"); try { const response = await fetch("/api/assets/publish", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sourceModule: moduleSlug, assetUrl: generatedBoss.assetUrl, name: `${direction?.name || "boss"}-boss-sprite-sheet.png` }) }), published = await response.json().catch(() => ({})); if (!response.ok) throw new Error(published.error || "Could not save this boss sprite sheet to Final Game."); generatedBoss.finalGameAsset = published; await saveCheckpoint(); showManifestLink(generatedBoss); saveToFinalGameButton.textContent = "SAVED TO FINAL GAME"; saveToFinalGameButton.disabled = true; status.textContent = "Boss sprite sheet and coordinates JSON saved to the Final Game library."; } catch (error) { status.textContent = error.message; } finally { setBusy(false); saveToFinalGameButton.disabled = Boolean(generatedBoss?.finalGameAsset); } }
 async function loadLibrary() { const response = await fetch(`/api/assets?module=${moduleSlug}`), assets = response.ok ? await response.json() : []; libraryCount.textContent = `${assets.length} ${assets.length === 1 ? "FILE" : "FILES"}`; library.replaceChildren(); if (!assets.length) { const empty = document.createElement("p"); empty.className = "profile-empty"; empty.textContent = "No boss concepts yet."; library.append(empty); return; } assets.forEach((asset) => { const link = document.createElement("a"), image = document.createElement("img"), name = document.createElement("span"); link.href = asset.assetUrl; link.download = asset.originalName; image.src = asset.assetUrl; image.alt = asset.originalName; name.textContent = asset.originalName; link.append(image, name); library.append(link); }); }
-async function toggleComplete() { const completed = completeButton.dataset.completed !== "true", response = await fetch(`/api/modules/${moduleSlug}/progress`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ learnerId, completed }) }); if (!response.ok) return; completeButton.dataset.completed = String(completed); completeButton.textContent = completed ? "REOPEN MODULE" : "MARK MODULE COMPLETE"; }
+async function toggleComplete() {
+  if (busy || completeButton.disabled) return;
+  const completed = completeButton.dataset.completed !== "true";
+  completeButton.disabled = true;
+  try {
+    const response = await fetch(`/api/modules/${moduleSlug}/progress`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ learnerId, completed }) });
+    if (!response.ok) throw new Error('Save failed');
+    completeButton.dataset.completed = String(completed);
+    completeButton.textContent = completed ? "REOPEN MODULE" : "MARK MODULE COMPLETE";
+    $("#guide-completion-status").textContent = completed ? "Module completed." : "Progress saved.";
+  } catch { $("#guide-completion-status").textContent = "Could not save progress. Please try again."; }
+  finally { completeButton.disabled = false; }
+}
+
 answerForm.addEventListener("submit", (event) => { event.preventDefault(); submit(answerInput.value); });
 $("#load-template").addEventListener("click", () => { const template = templates[templateSelect.value]; if (!template || busy) return; creativePrompt.value = template.prompt; Object.keys(answers).forEach((key) => delete answers[key]); Object.assign(answers, template.answers); currentStep = steps.length; direction = { ...template.answers, ...template.direction }; generatedBoss = null; directionStatus.textContent = "READY"; renderDirection(); production.hidden = false; showBoss(null); status.textContent = "Template ready. Generate its boss sprite sheet."; renderGuide(); saveCheckpoint(); });
-buildButton.addEventListener("click", buildDirection); generateBossButton.addEventListener("click", generateBoss); saveToFinalGameButton.addEventListener("click", saveBossToFinalGame); animationSelect.addEventListener("change", () => { selectedAnimation = animationSelect.value; playbackElapsed = 0; playbackLastTime = null; }); playAnimationButton.addEventListener("click", () => { isAnimationPlaying = !isAnimationPlaying; playbackLastTime = null; playAnimationButton.textContent = isAnimationPlaying ? "PAUSE" : "PLAY"; }); $("#complete-module").addEventListener("click", toggleComplete); $("#copy-prompt").addEventListener("click", async () => { await navigator.clipboard?.writeText(generatedPrompt.textContent); });
+previousStep.addEventListener("click", () => { if (!busy && currentStep > 0) { currentStep--; renderGuide(); saveCheckpoint(); } });
+editAnswers.addEventListener("click", () => { if (!busy) { currentStep = 0; renderGuide(); saveCheckpoint(); } });
+answerInput.addEventListener("input", () => { renderChoices(); updateBuildButton(); });
+buildButton.addEventListener("click", () => {
+  const step = steps[currentStep];
+  if (step) { const answer = answerInput.value.trim(); if (!answer) { answerInput.focus(); return; } commitAnswer(step, answer); saveCheckpoint(); }
+  buildDirection();
+});
+generateBossButton.addEventListener("click", generateBoss); saveToFinalGameButton.addEventListener("click", saveBossToFinalGame); animationSelect.addEventListener("change", () => { selectedAnimation = animationSelect.value; playbackElapsed = 0; playbackLastTime = null; }); playAnimationButton.addEventListener("click", () => { isAnimationPlaying = !isAnimationPlaying; playbackLastTime = null; playAnimationButton.textContent = isAnimationPlaying ? "PAUSE" : "PLAY"; }); $("#complete-module").addEventListener("click", toggleComplete); $("#copy-prompt").addEventListener("click", async () => { await navigator.clipboard?.writeText(generatedPrompt.textContent); });
 creativePrompt.addEventListener("change", saveCheckpoint);
 renderGuide(); loadLibrary(); restoreCheckpoint(); window.requestAnimationFrame(animationLoop);
+
+fetch(`/api/modules?learnerId=${encodeURIComponent(learnerId)}`).then(response => response.ok ? response.json() : []).then(modules => { const item = modules.find(module => module.slug === moduleSlug); if (!item) return; completeButton.dataset.completed = String(item.completed); completeButton.textContent = item.completed ? 'REOPEN MODULE' : 'MARK MODULE COMPLETE'; $('#guide-completion-status').textContent = item.completed ? 'Module completed.' : ''; completeButton.disabled = false; }).catch(() => { $('#guide-completion-status').textContent = 'Could not load progress. Please refresh.'; });

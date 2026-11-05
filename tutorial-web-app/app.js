@@ -1,4 +1,5 @@
 let modules = [];
+let progressRefreshVersion = 0;
 const completedModules = new Set();
 const learnerId = (() => { const key = 'godot-forge-learner-id'; let value = localStorage.getItem(key); if (!value) { value = crypto.randomUUID().replace(/-/g, ''); localStorage.setItem(key, value); } return value; })();
 const supportedLocales = ["en", "zh", "ms"];
@@ -173,6 +174,8 @@ const interfaceCopy = {
     done: "DONE",
     markDone: "MARK DONE",
     reopen: "REOPEN",
+    locked: "LOCKED",
+    unlockRequirement: "Complete modules 1–19 to unlock.",
     quizRequirement: "PASS QUIZ TO COMPLETE",
     quizPassed: "QUIZ PASSED",
     reset: "RESET MODULE",
@@ -224,6 +227,8 @@ const interfaceCopy = {
     done: "完成",
     markDone: "标记完成",
     reopen: "重新打开",
+    locked: "未解锁",
+    unlockRequirement: "完成第 1–19 个模块后解锁。",
     quizRequirement: "通过测验后完成",
     quizPassed: "测验已通过",
     reset: "重置模块",
@@ -275,6 +280,8 @@ const interfaceCopy = {
     done: "SELESAI",
     markDone: "TANDA SELESAI",
     reopen: "BUKA SEMULA",
+    locked: "TERKUNCI",
+    unlockRequirement: "Lengkapkan modul 1–19 untuk membuka.",
     quizRequirement: "LULUS KUIZ UNTUK SELESAI",
     quizPassed: "KUIZ LULUS",
     reset: "SET SEMULA MODUL",
@@ -317,6 +324,20 @@ function modulePath(module) {
 function moduleLevel(module) {
   const orderIndex = moduleOrder.indexOf(module.slug);
   return orderIndex === -1 ? module.level : orderIndex + 1;
+}
+
+function prerequisitesComplete() {
+  const prerequisites = modules.filter((module) => moduleLevel(module) <= 19);
+  return prerequisites.length === 19 && prerequisites.every((module) => completedModules.has(module.slug));
+}
+
+function moduleLocked(module) {
+  return moduleLevel(module) >= 20 && !prerequisitesComplete();
+}
+
+function displayedTitle(module) {
+  const title = moduleCopy(module).title;
+  return module.slug === "microbit-gamepad" ? `BONUS · ${title}` : title;
 }
 
 function moduleCopy(module) {
@@ -362,13 +383,11 @@ function renderNavigation() {
       (module) => {
         const copy = moduleCopy(module);
         const destination = ["character-creation", "game-assets-creation", "boss-creation", "storyline-engine", "parallax-tiling-map", "items-spawning", "game-loop-engine", "game-controls", "game-settings", "game-physics", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "math-stem-physics-quiz", "setup-godot-with-ai", "enemies-ai", "final-game", "microbit-gamepad"].includes(module.slug) ? modulePath(module) : `#module-${module.slug}`;
-        return `
-        <a class="nav-item ${completedModules.has(module.slug) ? "completed" : ""}" href="${destination}">
-          <span class="nav-number">${String(moduleLevel(module)).padStart(2, "0")}</span>
-          <span>${copy.title}</span>
-          ${completedModules.has(module.slug) ? '<span class="nav-check">✓</span>' : ""}
-        </a>
-      `;
+        const locked = moduleLocked(module);
+        const content = `<span class="nav-number">${String(moduleLevel(module)).padStart(2, "0")}</span><span>${displayedTitle(module)}</span>${locked ? '<span class="nav-check" aria-hidden="true">🔒</span>' : completedModules.has(module.slug) ? '<span class="nav-check">✓</span>' : ""}`;
+        return locked
+          ? `<span class="nav-item locked" aria-disabled="true" title="${interfaceCopy[currentLocale].unlockRequirement}">${content}</span>`
+          : `<a class="nav-item ${completedModules.has(module.slug) ? "completed" : ""}" href="${destination}">${content}</a>`;
       },
     )
     .join("");
@@ -385,21 +404,23 @@ function renderCards(query = "") {
     .map((module) => {
       const copy = moduleCopy(module);
       const complete = completedModules.has(module.slug);
+      const locked = moduleLocked(module);
       return `
-        <article id="module-${module.slug}" class="module-card ${complete ? "completed" : ""}">
+        <article id="module-${module.slug}" class="module-card ${complete ? "completed" : ""} ${locked ? "locked" : ""}">
           <div class="module-card-top">
             <span class="module-index">${interfaceCopy[currentLocale].chapter} ${String(moduleLevel(module)).padStart(2, "0")}</span>
             <span class="module-state">${localizeTag(module.tag)}</span>
           </div>
           <span class="module-icon" aria-hidden="true"><span class="module-icon-fallback">${moduleIcons[module.slug] || "✦"}</span><img src="${module.slug === "microbit-gamepad" ? "/microbit-gamepad/images/joystick-bit-v2.png" : `https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/tutorial-web-app/images/module-icons/${module.slug}.webp`}" alt="" width="112" height="112" loading="lazy" decoding="async" /></span>
-          <h3>${copy.title}</h3>
+          <h3>${displayedTitle(module)}</h3>
           <p>${copy.description}</p>
-          <div class="module-meta"><span>↳ ${module.durationMinutes} ${interfaceCopy[currentLocale].minutes}</span><span>● ${complete ? interfaceCopy[currentLocale].done : interfaceCopy[currentLocale].ready}</span></div>
+          <div class="module-meta"><span>↳ ${module.durationMinutes} ${interfaceCopy[currentLocale].minutes}</span><span>● ${locked ? interfaceCopy[currentLocale].locked : complete ? interfaceCopy[currentLocale].done : interfaceCopy[currentLocale].ready}</span></div>
+          ${locked ? `<p class="module-lock-reason">🔒 ${interfaceCopy[currentLocale].unlockRequirement}</p>` : ""}
           ${module.slug === 'math-stem-physics-quiz'
             ? `<span class="quiz-requirement">${complete ? interfaceCopy[currentLocale].quizPassed : interfaceCopy[currentLocale].quizRequirement}</span>`
-            : `<button class="complete-button" type="button" data-module="${module.slug}" aria-label="${complete ? interfaceCopy[currentLocale].reopen : interfaceCopy[currentLocale].markDone}">${complete ? interfaceCopy[currentLocale].reopen : interfaceCopy[currentLocale].markDone}</button>`}
-          <button class="reset-module-button" type="button" data-module="${module.slug}" aria-label="${interfaceCopy[currentLocale].reset}">${interfaceCopy[currentLocale].reset}</button>
-          <a class="card-action" href="${modulePath(module)}" aria-label="${copy.title}">↗</a>
+            : `<button class="complete-button" type="button" data-module="${module.slug}" ${locked ? "disabled" : ""} aria-label="${complete ? interfaceCopy[currentLocale].reopen : interfaceCopy[currentLocale].markDone}">${complete ? interfaceCopy[currentLocale].reopen : interfaceCopy[currentLocale].markDone}</button>`}
+          <button class="reset-module-button" type="button" data-module="${module.slug}" ${locked ? "disabled" : ""} aria-label="${interfaceCopy[currentLocale].reset}">${interfaceCopy[currentLocale].reset}</button>
+          ${locked ? `<span class="card-action locked-action" aria-hidden="true">🔒</span>` : `<a class="card-action" href="${modulePath(module)}" aria-label="${displayedTitle(module)}">↗</a>`}
         </article>
       `;
     })
@@ -428,7 +449,7 @@ function renderProgress() {
 }
 
 async function toggleComplete(slug) {
-  if (slug === 'math-stem-physics-quiz') return;
+  if (slug === 'math-stem-physics-quiz' || moduleLocked(modules.find((item) => item.slug === slug))) return;
   const completed = !completedModules.has(slug);
   const response = await fetch(`/api/modules/${encodeURIComponent(slug)}/progress`, {
     method: "PATCH",
@@ -437,6 +458,7 @@ async function toggleComplete(slug) {
   });
 
   if (!response.ok) throw new Error("Unable to save progress.");
+  progressRefreshVersion++;
   if (completed) completedModules.add(slug);
   else completedModules.delete(slug);
   renderNavigation();
@@ -445,6 +467,7 @@ async function toggleComplete(slug) {
 }
 
 window.addEventListener('godot-forge-module-reset', event => {
+  progressRefreshVersion++;
   const slug = event.detail.slug;
   completedModules.delete(slug);
   const module = modules.find(item => item.slug === slug);
@@ -470,20 +493,27 @@ moduleNav.addEventListener("click", () => {
 });
 
 async function initializeApp() {
+  const version = ++progressRefreshVersion;
   try {
     const response = await fetch(`/api/modules?learnerId=${encodeURIComponent(learnerId)}`);
     if (!response.ok) throw new Error("Unable to load tutorial modules.");
-    modules = (await response.json()).sort((first, second) => moduleLevel(first) - moduleLevel(second));
+    const updatedModules = await response.json();
+    if (version !== progressRefreshVersion) return;
+    modules = updatedModules.sort((first, second) => moduleLevel(first) - moduleLevel(second));
+    completedModules.clear();
     modules.filter((module) => module.completed).forEach((module) => completedModules.add(module.slug));
     moduleCount.textContent = modules.length;
     renderNavigation();
-    renderCards();
+    renderCards(moduleSearch.value);
     renderProgress();
   } catch (error) {
+    if (version !== progressRefreshVersion) return;
     moduleGrid.innerHTML = `<p class="empty-state">${interfaceCopy[currentLocale].loadError}</p>`;
     emptyState.hidden = true;
   }
 }
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) initializeApp(); });
 
 applyInterfaceCopy();
 initializeApp();
