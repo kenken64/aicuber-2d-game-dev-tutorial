@@ -57,10 +57,10 @@
   for (const image of [sceneImage, rockImage, splashImage, swimmerImage]) image.crossOrigin = "anonymous";
   let swimmerParts = null;
   let crawlFrames = null;
-  sceneImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/forest-pool.webp";
-  rockImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/boulder.webp";
-  splashImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/water-splash.webp";
-  swimmerImage.src = "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-physics/images/swimmer.webp";
+  sceneImage.src = "/game-physics/images/forest-pool.webp";
+  rockImage.src = "/game-physics/images/boulder.webp";
+  splashImage.src = "/game-physics/images/water-splash.webp";
+  swimmerImage.src = "/game-physics/images/swimmer.webp";
   crawlImage.src = "/game-physics/swimmer-crawl-v2.webp";
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let state = "ready";

@@ -19,10 +19,10 @@
   let learnerId = localStorage.getItem(learnerKey);
   if (!learnerId) { learnerId = crypto.randomUUID().replace(/-/g, ''); localStorage.setItem(learnerKey, learnerId); }
   const image = (src, onload) => { const asset = new Image(); asset.crossOrigin = 'anonymous'; if (onload) asset.onload = () => onload(asset); asset.src = src; return asset; };
-  const background = image('https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/forest-arena.webp');
-  const coinArt = image('https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/gold-coin.webp');
+  const background = image('/game-achievement/images/forest-arena.webp');
+  const coinArt = image('/game-achievement/images/gold-coin.webp');
   let blueExplorer = null;
-  const explorer = image('https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/items-spawning/images/forest-sword-explorer.png', source => { blueExplorer = recolorExplorer(source); });
+  const explorer = image('/items-spawning/images/forest-sword-explorer.png', source => { blueExplorer = recolorExplorer(source); });
   const players = [
     { id: 1, x: 210, feetY: FLOOR_Y, velocityY: 0, facing: 1, jumpHeld: false, moving: false, coins: 0 },
     { id: 2, x: 750, feetY: FLOOR_Y, velocityY: 0, facing: -1, jumpHeld: false, moving: false, coins: 0 },

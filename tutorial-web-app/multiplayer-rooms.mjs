@@ -96,6 +96,7 @@ export function attachMultiplayerRooms(server, { authorizeUpgrade = async () => 
     }
     if (game.collected.length === COINS.length) {
       room.phase = 'finished';
+      for (const player of game.players) { player.moving = false; player.feetY = FLOOR_Y; player.velocityY = 0; }
       for (const member of room.members.values()) member.ready = false;
       announce(room);
     }

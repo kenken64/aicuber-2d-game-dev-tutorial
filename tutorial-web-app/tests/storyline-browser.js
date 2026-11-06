@@ -43,12 +43,8 @@ try {
   }
   browser = await chromium.launch({ channel: process.env.CHROME_CHANNEL || 'chrome', headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  // The production bucket only permits localhost:3000; this isolated test
-  // uses a random port, so proxy the public bubble with test CORS headers.
-  await page.route('**/storyline-engine/images/dialogue-bubble-stage.webp', async route => {
-    const response = await fetch(route.request().url());
-    await route.fulfill({ status: response.status, body: Buffer.from(await response.arrayBuffer()), contentType: 'image/webp', headers: { 'access-control-allow-origin': '*' } });
-  });
+  // Simulate a deployment origin that cannot fetch canvas artwork from Spaces.
+  await page.route('https://godot-forge.sgp1.digitaloceanspaces.com/**', route => route.abort());
   await page.route('**/api/storyline/voice/url?*', route => route.fulfill({ status: 503, json: { error: 'Use the local voice endpoint in this test.' } }));
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
@@ -68,6 +64,7 @@ try {
   assert.equal(await page.locator('#boss-picker option').count(), 2);
   assert.equal(await page.evaluate(() => window.storyPreview.mood), 'drought');
   assert.equal(await page.evaluate(() => window.storyPreview.hasBubbleTexture), true);
+  assert.equal(await page.evaluate(() => window.storyPreview.artworkReady), true);
   assert.equal(await page.locator('#dialogue-speaker').textContent(), 'Explorer');
   assert.match(await page.locator('#dialogue-line').textContent(), /find my friend/);
   await page.evaluate(() => {

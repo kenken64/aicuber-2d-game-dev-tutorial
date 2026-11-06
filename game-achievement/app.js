@@ -29,11 +29,11 @@
   if (!learnerId) { learnerId = crypto.randomUUID().replace(/-/g, ''); localStorage.setItem(learnerKey, learnerId); }
   const images = {};
   for (const name of ['forest-arena', 'gold-coin', 'heart-pickup']) {
-    const image = new Image(); image.crossOrigin = 'anonymous'; image.src = `https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/${name}.webp`; images[name] = image;
+    const image = new Image(); image.crossOrigin = 'anonymous'; image.src = `/game-achievement/images/${name}.webp`; images[name] = image;
   }
   images.explorer = new Image();
   images.explorer.crossOrigin = 'anonymous';
-  images.explorer.src = 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/items-spawning/images/forest-sword-explorer.png';
+  images.explorer.src = '/items-spawning/images/forest-sword-explorer.png';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const input = new Set();
   const collected = new Set();
@@ -115,7 +115,7 @@
   function showUnlock(name) {
     activeReveal = name;
     const overlay = $('#unlock-reveal');
-    $('#reveal-art').src = `https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/${name}-badge.webp`;
+    $('#reveal-art').src = `/game-achievement/images/${name}-badge.webp`;
     updateUI();
     overlay.hidden = false;
     overlay.style.animation = 'none';

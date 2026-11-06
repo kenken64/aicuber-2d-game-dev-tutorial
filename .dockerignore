@@ -19,3 +19,4 @@ final-game/dist
 *.mp4
 
 !microbit-gamepad/images/joystick-bit-v2.png
+!game-physics/swimmer-crawl-v2.webp

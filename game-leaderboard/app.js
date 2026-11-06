@@ -27,7 +27,7 @@
   if (!copy[locale]) locale = 'en';
   let learnerId = localStorage.getItem(learnerKey);
   if (!learnerId) { learnerId = crypto.randomUUID().replace(/-/g, ''); localStorage.setItem(learnerKey, learnerId); }
-  const assets = { 'dusk-arena': 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-leaderboard/images/dusk-arena.webp', explorer: 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/items-spawning/images/forest-sword-explorer.png', 'gold-coin': 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/gold-coin.webp', 'heart-pickup': 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/heart-pickup.webp' };
+  const assets = { 'dusk-arena': '/game-leaderboard/images/dusk-arena.webp', explorer: '/items-spawning/images/forest-sword-explorer.png', 'gold-coin': '/game-achievement/images/gold-coin.webp', 'heart-pickup': '/game-achievement/images/heart-pickup.webp' };
   const images = Object.fromEntries(Object.entries(assets).map(([name, src]) => { const image = new Image(); image.crossOrigin = 'anonymous'; image.src = src; return [name, image]; }));
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const input = new Set();

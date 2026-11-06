@@ -1,4 +1,4 @@
-:root{color-scheme:dark;--bg:#101d18;--panel:#182a22;--panel-2:#20362b;--ink:#edf5e9;--muted:#9eb1a5;--line:#385246;--lime:#c4f265;--violet:#9c8cff;--gold:#ffd66b;--icon-sheet:url('https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-settings/images/forest-hud-icons.png')}
+:root{color-scheme:dark;--bg:#101d18;--panel:#182a22;--panel-2:#20362b;--ink:#edf5e9;--muted:#9eb1a5;--line:#385246;--lime:#c4f265;--violet:#9c8cff;--gold:#ffd66b;--icon-sheet:url('/game-settings/images/forest-hud-icons.png')}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:radial-gradient(circle at 75% 10%,#1c3528 0,transparent 30%),var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}

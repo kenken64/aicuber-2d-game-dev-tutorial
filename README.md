@@ -32,7 +32,7 @@ The [web app](tutorial-web-app/README.md) serves the landing page, API, and 22 m
 
 ## Media and saved data
 
-The published images and cached storyline voice files are hosted in the `godot-forge` DigitalOcean Spaces bucket in `sgp1`. The URL manifest currently lists 204 images and 7 MP3 files. The app loads published media directly from Spaces. The bucket must allow the app's origin for `GET` and `HEAD`; `http://localhost:3000` is configured for local development. Add your deployed app origin to the bucket's CORS rule before deploying.
+The published images and cached storyline voice files are hosted in the `godot-forge` DigitalOcean Spaces bucket in `sgp1`. The app serves published images through its own origin, so Phaser and canvas artwork do not depend on the bucket allowing each deployment origin. Cached storyline voice files are served directly from Spaces.
 
 Media binaries, local `.env` files, dependencies, and generated output are excluded from Git by [`.gitignore`](.gitignore). The URL manifest and upload script remain in Git. Newly generated learner assets and voice lines are stored locally until they are uploaded; run the [upload workflow](UPLOAD_ASSETS.md) and restart the server to publish them. The uploader checks file content and skips unchanged public objects.
 

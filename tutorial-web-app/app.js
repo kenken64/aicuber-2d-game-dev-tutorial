@@ -411,7 +411,7 @@ function renderCards(query = "") {
             <span class="module-index">${interfaceCopy[currentLocale].chapter} ${String(moduleLevel(module)).padStart(2, "0")}</span>
             <span class="module-state">${localizeTag(module.tag)}</span>
           </div>
-          <span class="module-icon" aria-hidden="true"><span class="module-icon-fallback">${moduleIcons[module.slug] || "✦"}</span><img src="${module.slug === "microbit-gamepad" ? "/microbit-gamepad/images/joystick-bit-v2.png" : `https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/tutorial-web-app/images/module-icons/${module.slug}.webp`}" alt="" width="112" height="112" loading="lazy" decoding="async" /></span>
+          <span class="module-icon" aria-hidden="true"><span class="module-icon-fallback">${moduleIcons[module.slug] || "✦"}</span><img src="${module.slug === "microbit-gamepad" ? "/microbit-gamepad/images/joystick-bit-v2.png" : `/tutorial-web-app/images/module-icons/${module.slug}.webp`}" alt="" width="112" height="112" loading="lazy" decoding="async" /></span>
           <h3>${displayedTitle(module)}</h3>
           <p>${copy.description}</p>
           <div class="module-meta"><span>↳ ${module.durationMinutes} ${interfaceCopy[currentLocale].minutes}</span><span>● ${locked ? interfaceCopy[currentLocale].locked : complete ? interfaceCopy[currentLocale].done : interfaceCopy[currentLocale].ready}</span></div>

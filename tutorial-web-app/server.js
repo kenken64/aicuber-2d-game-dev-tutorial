@@ -45,10 +45,13 @@ const publishedStoredAssetNames = new Map(
 
 function publishedAssetUrl(value) {
   if (typeof value !== "string") return value;
+  const publishedName = publishedStoredAssetNames.get(value);
+  if (publishedName) return `/api/published-assets/${encodeURIComponent(publishedName)}`;
   const match = value.match(/^\/api\/assets\/([^/?#]+)$/);
   if (!match) return value;
   try {
-    return publishedStoredAssetUrls.get(decodeURIComponent(match[1])) || value;
+    return publishedStoredAssetUrls.has(decodeURIComponent(match[1]))
+      ? `/api/published-assets/${match[1]}` : value;
   } catch {
     return value;
   }
@@ -797,7 +800,7 @@ function storedNameFromAssetUrl(assetUrl) {
   if (publishedStoredName) return publishedStoredName;
   try {
     const pathname = new URL(String(assetUrl), "http://localhost").pathname;
-    const match = pathname.match(/^\/api\/assets\/([^/]+)$/);
+    const match = pathname.match(/^\/api\/(?:published-assets|assets)\/([^/]+)$/);
     const storedName = match ? decodeURIComponent(match[1]) : "";
     return path.basename(storedName) === storedName ? storedName : "";
   } catch {
@@ -1716,6 +1719,28 @@ async function handleApi(request, response, url) {
       name: safeOriginalName(body.name || "final-game-asset.png"),
       category: String(body.category || ''),
     }));
+  }
+
+  const publishedAssetMatch = url.pathname.match(/^\/api\/published-assets\/([^/]+)$/);
+  if (publishedAssetMatch && request.method === "GET") {
+    const storedName = decodeURIComponent(publishedAssetMatch[1]);
+    const publicUrl = publishedStoredAssetUrls.get(storedName);
+    if (!publicUrl) return sendJson(response, 404, { error: "Published asset not found." });
+    try {
+      const upstream = await fetch(publicUrl, { signal: AbortSignal.timeout(20000) });
+      if (!upstream.ok) return sendJson(response, 502, { error: "Published asset is unavailable." });
+      let bytes = Buffer.from(await upstream.arrayBuffer());
+      const mimeType = upstream.headers.get("content-type") || contentType(storedName);
+      if (mimeType.includes("application/json") || storedName.endsWith('.json')) {
+        try { bytes = Buffer.from(JSON.stringify(JSON.parse(bytes.toString('utf8')), (_key, value) => publishedAssetUrl(value))); }
+        catch { /* Serve the original bytes if the upstream JSON is invalid. */ }
+      }
+      response.writeHead(200, { "content-type": mimeType, "content-length": bytes.length, "cache-control": "no-cache" });
+      response.end(bytes);
+    } catch {
+      return sendJson(response, 502, { error: "Published asset is unavailable." });
+    }
+    return;
   }
 
   const assetMatch = url.pathname.match(/^\/api\/assets\/([^/]+)$/);

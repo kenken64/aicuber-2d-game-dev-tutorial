@@ -89,7 +89,7 @@ function updateControls(){
 }
 function enterDialogue(){
   mode='dialogue';dialogueIndex=0;
-  const image=document.getElementById('scene-image');image.src='https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-ending-cutscene/images/shrine-choice.webp';image.alt='Pixel-art forest shrine where the explorer faces the ancient guardian and the glowing heartseed.';
+  const image=document.getElementById('scene-image');image.src='/game-ending-cutscene/images/shrine-choice.webp';image.alt='Pixel-art forest shrine where the explorer faces the ancient guardian and the glowing heartseed.';
   document.getElementById('screen-heading').textContent=t().cutsceneLabel;
   renderDialogue();updateControls();
 }
@@ -100,7 +100,7 @@ function advanceDialogue(){
 }
 function showEnding(choice){
   endingChoice=choice;mode='ending';
-  const image=document.getElementById('scene-image');image.src=`https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-ending-cutscene/images/ending-${choice}.webp`;
+  const image=document.getElementById('scene-image');image.src=`/game-ending-cutscene/images/ending-${choice}.webp`;
   image.alt=choice==='awaken'?'Pixel-art ending: the hero awakens the grove with the heartseed.':'Pixel-art ending: the hero keeps the heartseed safely dormant.';
   renderEnding();updateControls();saveEndingProgress(true);
 }
@@ -120,7 +120,7 @@ async function saveEndingProgress(completed){
   }catch{setStatus(t().saveError);window.showToast?.(t().saveError,'error');}
 }
 function resetCutscene(){mode='comic';dialogueIndex=0;endingChoice='';
-  const image=document.getElementById('scene-image');image.src='https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-ending-cutscene/images/final-boss-comic.webp';image.alt='Four-panel pixel-art recap showing the explorer defeating the ancient tree guardian.';
+  const image=document.getElementById('scene-image');image.src='/game-ending-cutscene/images/final-boss-comic.webp';image.alt='Four-panel pixel-art recap showing the explorer defeating the ancient tree guardian.';
   document.getElementById('screen-heading').textContent=t().comicHeading;
   document.getElementById('choice-panel').hidden=true;document.getElementById('ending-card').hidden=true;
   applyCopy();

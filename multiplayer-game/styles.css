@@ -59,6 +59,8 @@ h1, h2, h3, p { margin-top: 0; }
 .chat-messages { display: flex; flex-direction: column; gap: 8px; height: 130px; overflow-y: auto; margin: 0; padding: 12px; list-style: none; }
 .chat-messages li { color: var(--ink); font: 11px/1.4 "Space Grotesk", sans-serif; overflow-wrap: anywhere; }
 .chat-messages strong { color: var(--gold); }
+.chat-messages strong[data-player="1"] { color: #a8e5af; }
+.chat-messages strong[data-player="2"] { color: #91d4f5; }
 .chat-messages .chat-empty { color: var(--muted); font-family: "DM Mono", monospace; }
 .chat-form { display: flex; gap: 7px; padding: 9px; border-top: 1px solid var(--line); }
 .chat-form input { flex: 1; }

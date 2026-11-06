@@ -23,9 +23,9 @@
   let playedRound = false;
   let saveBusy = false;
   let animationTime = 0;
-  const background = new Image(); background.crossOrigin = 'anonymous'; background.src = 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/forest-arena.webp';
-  const explorer = new Image(); explorer.crossOrigin = 'anonymous'; explorer.src = 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/items-spawning/images/forest-sword-explorer.png';
-  const coinArt = new Image(); coinArt.crossOrigin = 'anonymous'; coinArt.src = 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/gold-coin.webp';
+  const background = new Image(); background.crossOrigin = 'anonymous'; background.src = '/game-achievement/images/forest-arena.webp';
+  const explorer = new Image(); explorer.crossOrigin = 'anonymous'; explorer.src = '/items-spawning/images/forest-sword-explorer.png';
+  const coinArt = new Image(); coinArt.crossOrigin = 'anonymous'; coinArt.src = '/game-achievement/images/gold-coin.webp';
   for (const asset of [background, explorer, coinArt]) asset.onload = () => panels.forEach(drawPanel);
 
   function send(panel, payload) { if (panel.socket?.readyState === WebSocket.OPEN) panel.socket.send(JSON.stringify(payload)); }
@@ -55,6 +55,7 @@
     for (const entry of entries) {
       const row = document.createElement('li');
       const name = document.createElement('strong'); name.textContent = `${entry.name}: `;
+      if (entry.slot === 1 || entry.slot === 2) name.dataset.player = String(entry.slot);
       row.append(name, document.createTextNode(entry.text)); host.append(row);
     }
     host.scrollTop = host.scrollHeight;
@@ -123,7 +124,7 @@
       ctx.scale(player.facing || 1, 1);
       if (player.slot === 2) ctx.filter = 'hue-rotate(135deg)';
       if (explorer.complete && explorer.naturalWidth) {
-        const frame = player.feetY < 315 ? 32 + Math.floor(animationTime / 120) % 4 : player.moving ? 8 + Math.floor(animationTime / 105) % 8 : 0;
+        const frame = panel.room?.phase === 'finished' ? 0 : player.feetY < 315 ? 32 + Math.floor(animationTime / 120) % 4 : player.moving ? 8 + Math.floor(animationTime / 105) % 8 : 0;
         ctx.drawImage(explorer, frame % 8 * 256, Math.floor(frame / 8) * 256, 256, 256, -52, -114, 104, 114);
       } else { ctx.fillStyle = player.slot === 1 ? '#5a9d64' : '#4d9ac9'; ctx.fillRect(-16, -80, 32, 78); }
       ctx.restore();

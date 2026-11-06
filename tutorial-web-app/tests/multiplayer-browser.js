@@ -56,6 +56,16 @@ try {
   await page.locator('#seat-2 .chat-input').fill('Ready for a forest run?');
   await page.locator('#seat-2 .chat-form button').click();
   await page.waitForFunction(() => [...document.querySelectorAll('.chat-messages')].every(element => element.textContent.includes('Ready for a forest run?')));
+  await page.locator('#seat-1 .chat-input').fill('Ready to go!');
+  await page.locator('#seat-1 .chat-form button').click();
+  await page.waitForFunction(() => [...document.querySelectorAll('.chat-messages')].every(element => element.textContent.includes('Ready to go!')));
+  for (const slot of [1, 2]) {
+    const playerOne = page.locator(`#seat-${slot} .chat-messages strong[data-player="1"]`);
+    const playerTwo = page.locator(`#seat-${slot} .chat-messages strong[data-player="2"]`);
+    assert.equal(await playerOne.textContent(), 'Player 1: ');
+    assert.equal(await playerTwo.textContent(), 'Player 2: ');
+    assert.notEqual(await playerOne.evaluate(element => getComputedStyle(element).color), await playerTwo.evaluate(element => getComputedStyle(element).color));
+  }
   await page.locator('#seat-2 .ready-button').click();
   await page.waitForFunction(() => [...document.querySelectorAll('.member--two')].every(element => element.dataset.ready === 'true'));
   assert.equal(await page.locator('#seat-1 .game-overlay').isVisible(), true);

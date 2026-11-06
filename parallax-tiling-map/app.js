@@ -196,7 +196,7 @@ async function saveAsTemplate() {
   const name=$('#template-name').value.trim();
   if(!name) { window.showToast?.(currentCopy().templateNameRequired,'error'); return; }
   const fileName=`${name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'side-scroller'}-parallax-template.json`;
-  const template={version:1,kind:'parallax-template',name,createdAt:new Date().toISOString(),dimensions:{columns:COLS,rows:ROWS,cellSize:CELL,screens:PAGE_COUNT},placements:state.placements,collisionPolygons:state.collisionPolygons,spawn:state.spawn,selectedPack:state.selectedPack,selectedCharacter:state.selectedCharacter,layers:{far:'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/parallax-far.webp',midground:'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/parallax-midground.webp'}};
+  const template={version:1,kind:'parallax-template',name,createdAt:new Date().toISOString(),dimensions:{columns:COLS,rows:ROWS,cellSize:CELL,screens:PAGE_COUNT},placements:state.placements,collisionPolygons:state.collisionPolygons,spawn:state.spawn,selectedPack:state.selectedPack,selectedCharacter:state.selectedCharacter,layers:{far:'/parallax-tiling-map/images/parallax-far.webp',midground:'/parallax-tiling-map/images/parallax-midground.webp'}};
   try {
     const response=await fetch('/api/assets?module=final-game',{method:'POST',headers:{'content-type':'application/json','x-file-name':fileName},body:JSON.stringify(template)});
     if(!response.ok) throw new Error('Template save failed');
@@ -264,7 +264,7 @@ function renderPalette() {
       preview.style.backgroundPosition = `${grid.columns === 1 ? 0 : column / (grid.columns - 1) * 100}% ${grid.rows === 1 ? 0 : row / (grid.rows - 1) * 100}%`;
     } else {
       const column=index%4,row=Math.floor(index/4);
-      preview.style.backgroundImage='url("https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/practice-tiles-props.webp")';
+      preview.style.backgroundImage='url("/parallax-tiling-map/images/practice-tiles-props.webp")';
       preview.style.backgroundSize='400% 400%';
       preview.style.backgroundPosition=`${column/3*100}% ${row/3*100}%`;
     }
@@ -312,7 +312,7 @@ function renderGenerationPrompts() {
     const info=t.promptAssets[index] || {title:asset.file,purpose:''};
     const article=document.createElement('article'); article.className='prompt-card';
     const preview=document.createElement('div'); preview.className=`prompt-preview prompt-preview-${index}`;
-    const image=document.createElement('img'); image.src=`https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/${asset.file}`; image.alt=info.title; preview.append(image);
+    const image=document.createElement('img'); image.src=`/parallax-tiling-map/images/${asset.file}`; image.alt=info.title; preview.append(image);
     const body=document.createElement('div'); body.className='prompt-card-body';
     const heading=document.createElement('div'); heading.className='prompt-card-heading';
     const title=document.createElement('h3'); title.textContent=info.title;
@@ -525,10 +525,10 @@ function showJumpPose(phase) {
 function preload() {
   this.load.setCORS('anonymous');
   const pack=currentPack(), character=currentCharacter();
-  this.load.image('parallax-far','https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/parallax-far.webp');
-  this.load.image('parallax-midground','https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/parallax-midground.webp');
-  this.load.spritesheet('practice-tiles','https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/practice-tiles-props.webp',{frameWidth:256,frameHeight:256});
-  this.load.spritesheet('fallback-player','https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/parallax-tiling-map/images/practice-explorer-motion-v2.webp',{frameWidth:160,frameHeight:192});
+  this.load.image('parallax-far','/parallax-tiling-map/images/parallax-far.webp');
+  this.load.image('parallax-midground','/parallax-tiling-map/images/parallax-midground.webp');
+  this.load.spritesheet('practice-tiles','/parallax-tiling-map/images/practice-tiles-props.webp',{frameWidth:256,frameHeight:256});
+  this.load.spritesheet('fallback-player','/parallax-tiling-map/images/practice-explorer-motion-v2.webp',{frameWidth:160,frameHeight:192});
   if (pack) this.load.spritesheet('asset-pack',pack.manifest.image.assetUrl,{frameWidth:pack.manifest.grid.cellWidth,frameHeight:pack.manifest.grid.cellHeight});
   if (character) {
     const first=character.manifest.animations?.[0]?.frames?.[0], width=character.manifest.frameSize?.width || first?.width, height=character.manifest.frameSize?.height || first?.height;

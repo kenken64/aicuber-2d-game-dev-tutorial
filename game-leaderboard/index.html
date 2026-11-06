@@ -44,11 +44,11 @@
               <div class="arena">
                 <canvas id="leaderboard-stage" width="960" height="520" tabindex="0" role="application" aria-describedby="controls-help" aria-label="Move through the forest with left and right arrows or A and D, collect ten gold coins and one heart for points. Space or up jumps." data-i18n-aria="canvasLabel">A forest score run with an explorer, coins, and a heart.</canvas>
                 <div class="game-hud" aria-label="Score run progress" data-i18n-aria="hudLabel">
-                  <div class="hud-pill"><img src="https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/gold-coin.webp" alt="" /><span data-i18n="goldLabel">GOLD</span><strong id="gold-count">0 / 10</strong></div>
-                  <div class="hud-pill"><img src="https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/heart-pickup.webp" alt="" /><span data-i18n="heartLabel">HEART</span><strong id="heart-count">0 / 1</strong></div>
+                  <div class="hud-pill"><img src="/game-achievement/images/gold-coin.webp" alt="" /><span data-i18n="goldLabel">GOLD</span><strong id="gold-count">0 / 10</strong></div>
+                  <div class="hud-pill"><img src="/game-achievement/images/heart-pickup.webp" alt="" /><span data-i18n="heartLabel">HEART</span><strong id="heart-count">0 / 1</strong></div>
                   <div class="hud-pill score-pill"><span data-i18n="scoreLabel">SCORE</span><strong id="score-count">0</strong></div>
                 </div>
-                <div class="unlock-reveal" id="unlock-reveal" role="status" aria-live="assertive" hidden><div class="reveal-ring"></div><div class="reveal-ring ring-two"></div><img src="https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-leaderboard/images/leaderboard-crest.webp" alt="" /><div class="reveal-copy"><span data-i18n="unlockedLabel">LEADERBOARD UNLOCKED</span><strong id="reveal-title" data-i18n="revealTitle">150 points!</strong><p data-i18n="revealDetail">Your result is joining the ranking.</p></div></div>
+                <div class="unlock-reveal" id="unlock-reveal" role="status" aria-live="assertive" hidden><div class="reveal-ring"></div><div class="reveal-ring ring-two"></div><img src="/game-leaderboard/images/leaderboard-crest.webp" alt="" /><div class="reveal-copy"><span data-i18n="unlockedLabel">LEADERBOARD UNLOCKED</span><strong id="reveal-title" data-i18n="revealTitle">150 points!</strong><p data-i18n="revealDetail">Your result is joining the ranking.</p></div></div>
               </div>
               <div class="game-footer"><p id="game-status" role="status" aria-live="polite">Move right and collect every pickup.</p><span id="world-progress">0%</span></div>
               <div class="mobile-controls" aria-label="Touch game controls" data-i18n-aria="touchControlsLabel"><button type="button" data-control="left" aria-label="Move left" data-i18n-aria="leftControl">←</button><button type="button" data-control="right" aria-label="Move right" data-i18n-aria="rightControl">→</button><button type="button" data-control="jump" aria-label="Jump" data-i18n-aria="jumpControl">↑ <span data-i18n="jumpLabel">JUMP</span></button></div>
@@ -56,8 +56,8 @@
             </div>
             <aside class="mission-panel" aria-labelledby="mission-title">
               <p class="eyebrow" data-i18n="missionEyebrow">SCORING RULES</p><h2 id="mission-title" data-i18n="missionTitle">Every pickup counts.</h2>
-              <div class="mission-item"><img src="https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/gold-coin.webp" alt="" /><div><strong data-i18n="goldMission">10 gold coins</strong><p data-i18n="goldMissionCopy">+10 points each · 100 points total</p></div></div>
-              <div class="mission-item"><img src="https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-achievement/images/heart-pickup.webp" alt="" /><div><strong data-i18n="heartMission">1 heart</strong><p data-i18n="heartMissionCopy">+50 points · finish with 150</p></div></div>
+              <div class="mission-item"><img src="/game-achievement/images/gold-coin.webp" alt="" /><div><strong data-i18n="goldMission">10 gold coins</strong><p data-i18n="goldMissionCopy">+10 points each · 100 points total</p></div></div>
+              <div class="mission-item"><img src="/game-achievement/images/heart-pickup.webp" alt="" /><div><strong data-i18n="heartMission">1 heart</strong><p data-i18n="heartMissionCopy">+50 points · finish with 150</p></div></div>
               <div class="mission-progress"><span data-i18n="runLabel">RUN PROGRESS</span><strong id="pickup-count">0 / 11</strong><div class="progress-track"><span id="run-progress"></span></div></div>
               <button id="view-board" class="secondary-button" type="button" data-i18n="viewBoard">VIEW LEADERBOARD →</button>
             </aside>
@@ -67,7 +67,7 @@
         <section id="board-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-board" hidden>
           <div class="section-heading"><div><p class="eyebrow" data-i18n="boardEyebrow">PRACTICE RANKING</p><h2 data-i18n="boardTitle">Leaderboard</h2><p data-i18n="boardIntro">Finish the run to reveal your result among three demo rivals.</p></div><strong id="board-total">—</strong></div>
           <div class="leaderboard-card is-locked" id="leaderboard-card" aria-label="Leaderboard locked" data-i18n-aria="boardLockedAria">
-            <div class="board-hero"><img id="board-crest" src="https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-leaderboard/images/leaderboard-crest.webp" alt="" /><div><span id="board-state" class="board-state" data-i18n="locked">LOCKED</span><h3 id="board-message" data-i18n="lockedTitle">Your result is waiting.</h3><p id="board-detail" data-i18n="lockedDetail">Collect 10 gold and the heart to bring this leaderboard into color.</p></div></div>
+            <div class="board-hero"><img id="board-crest" src="/game-leaderboard/images/leaderboard-crest.webp" alt="" /><div><span id="board-state" class="board-state" data-i18n="locked">LOCKED</span><h3 id="board-message" data-i18n="lockedTitle">Your result is waiting.</h3><p id="board-detail" data-i18n="lockedDetail">Collect 10 gold and the heart to bring this leaderboard into color.</p></div></div>
             <div class="ranking-head"><span data-i18n="rankLabel">RANK</span><span data-i18n="playerLabel">PLAYER</span><span data-i18n="pointsLabel">POINTS</span></div>
             <div id="ranking-list" class="ranking-list" role="list" aria-label="Practice ranking" data-i18n-aria="rankingLabel">
               <div class="rank-row" role="listitem"><span>#1</span><strong>Fenn</strong><span>120</span></div>

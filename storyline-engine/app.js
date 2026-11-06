@@ -328,7 +328,7 @@ function renderArtPrompts() {
   grid.replaceChildren(...artPrompts.map(({ title, filename, prompt }, index) => {
     const card = document.createElement('article'); card.className = 'prompt-card';
     const localizedTitle = t.promptTitles?.[filename] || title;
-    const image = document.createElement('img'); image.src = `https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/storyline-engine/images/${artPreviews[filename]}`; image.alt = localizedTitle; image.loading = 'lazy';
+    const image = document.createElement('img'); image.src = `/storyline-engine/images/${artPreviews[filename]}`; image.alt = localizedTitle; image.loading = 'lazy';
     const body = document.createElement('div'); body.className = 'prompt-card-body';
     const heading = document.createElement('h3'); heading.textContent = localizedTitle;
     const kind = document.createElement('p'); kind.className = 'prompt-kind'; kind.textContent = ['grove-drought-v1.png', 'grove-flood-v1.png'].includes(filename) ? t.promptsEdited : t.promptsGenerated;
@@ -474,7 +474,7 @@ async function changeDialogue(delta) {
 
 function validManifest(manifest) {
   const assetUrl = manifest?.image?.assetUrl || '';
-  const savedAsset = /^\/api\/assets\/[^/]+$/.test(assetUrl);
+  const savedAsset = /^\/api\/(?:published-assets|assets)\/[^/]+$/.test(assetUrl);
   const publishedAsset = /^https:\/\/godot-forge\.sgp1\.digitaloceanspaces\.com\/2d-game-development\/tutorial-web-app\/storage\/assets\/(?:final-game\/)?[^/?#]+$/.test(assetUrl);
   if (!['character', 'boss'].includes(manifest?.kind) || (!savedAsset && !publishedAsset)) return false;
   const { width, height } = manifest.image;
@@ -540,10 +540,10 @@ function createPreview() {
     constructor() { super('StoryPreview'); }
     preload() {
       this.load.setCORS('anonymous');
-      for (const mood of ['drought', 'restored', 'flood']) this.load.image(`grove-${mood}`, `https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/storyline-engine/images/grove-${mood}-stage.webp`);
-      this.load.image('fallback-hero', 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/storyline-engine/images/explorer-stage.webp');
-      this.load.image('fallback-boss', 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/storyline-engine/images/guardian-stage.webp');
-      this.load.image('dialogue-bubble', 'https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/storyline-engine/images/dialogue-bubble-stage.webp');
+      for (const mood of ['drought', 'restored', 'flood']) this.load.image(`grove-${mood}`, `/storyline-engine/images/grove-${mood}-stage.webp`);
+      this.load.image('fallback-hero', '/storyline-engine/images/explorer-stage.webp');
+      this.load.image('fallback-boss', '/storyline-engine/images/guardian-stage.webp');
+      this.load.image('dialogue-bubble', '/storyline-engine/images/dialogue-bubble-stage.webp');
       if (heroManifest) this.load.image('story-hero', heroManifest.image.assetUrl);
       if (bossManifest) this.load.image('story-boss', bossManifest.image.assetUrl);
     }
@@ -566,7 +566,7 @@ function createPreview() {
       this.dialogueBubble.on('pointerdown', () => changeDialogue(1));
       this.dialogueSpeaker = this.add.text(0, 0, '', { fontFamily: 'system-ui, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#754522' });
       this.dialogueText = this.add.text(0, 0, '', { fontFamily: 'system-ui, sans-serif', fontSize: '16px', fontStyle: 'bold', color: '#35261b', wordWrap: { width: 398 } });
-      window.storyPreview = { usesHeroSprite: Boolean(this.hero), usesBossSprite: Boolean(this.boss), generatedFallbacks: Boolean(this.heroFallback || this.bossFallback), hasBubbleTexture: this.textures.exists('dialogue-bubble'), renderer: 'Phaser' };
+      window.storyPreview = { usesHeroSprite: Boolean(this.hero), usesBossSprite: Boolean(this.boss), generatedFallbacks: Boolean(this.heroFallback || this.bossFallback), hasBubbleTexture: this.textures.exists('dialogue-bubble'), artworkReady: ['grove-drought', 'grove-restored', 'grove-flood', 'fallback-hero', 'fallback-boss', 'dialogue-bubble'].every(key => this.textures.exists(key)), renderer: 'Phaser' };
       this.renderStory();
     }
     renderStory() {

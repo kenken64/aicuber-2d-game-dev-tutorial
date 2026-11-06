@@ -339,7 +339,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
             assert.equal(await page.locator('.join-button').count(), 2);
             assert.equal(await page.locator('#complete-module').isDisabled(), true);
           } else if (slug === "game-ending-cutscene") {
-            assert.equal(await page.locator("#scene-image").getAttribute("src"), "https://godot-forge.sgp1.digitaloceanspaces.com/2d-game-development/game-ending-cutscene/images/final-boss-comic.webp");
+            assert.equal(await page.locator("#scene-image").getAttribute("src"), "/game-ending-cutscene/images/final-boss-comic.webp");
             assert.equal(await page.locator(".asset-prompt").count(), 5);
             await page.click("#continue-to-ending");
             await page.locator("#advance-dialogue").click();
