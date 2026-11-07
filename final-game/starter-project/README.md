@@ -15,3 +15,5 @@ Section 6 adds a Controls button and a ControlsMenu node for keyboard and gamepa
 For combat, make the enemy attack range larger than the combined player/enemy collision half-widths; the example uses 65 pixels. Section 6 adds health bars, and the player SpriteFrames should include non-looping `hurt` and `death` animations when available. Main waits briefly before displaying game over so the death animation is visible. The online reference includes animation and game-over synchronization; its loopback relay address is only for a server running on the same computer.
 
 Default P1 controls are A/D to move, W to jump, S to crouch, E to roll, Space to attack, and F to interact. P2 uses Left/Right, Up to jump, Down to crouch, Control to roll, Shift to attack, and Return to interact. Use a RectangleShape2D on Player so the example can resize each player's own collision shape for crouching, and add a `crouch` SpriteFrames animation if you have one.
+
+Press jump twice before landing to double jump. The Player.gd example exposes `max_jumps` in the Inspector (default 2); landing resets the count.

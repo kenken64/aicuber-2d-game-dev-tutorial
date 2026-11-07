@@ -105,7 +105,7 @@ func _update_hud() -> void:
     $UI/HUD/Player2Health.value = p2.health
     $UI/HUD/Player2Health.visible = p2.active
     $UI/HUD/Player2HealthLabel.visible = p2.active
-    $UI/HUD/Hint.text = "Use Controls to change keys or gamepad. Boss: %s  Room: %s" % ["done" if Game.boss_defeated else "alive", online.code]
+    $UI/HUD/Hint.text = "Press jump twice for a double jump. Controls: change keys or gamepad. Boss: %s  Room: %s" % ["done" if Game.boss_defeated else "alive", online.code]
     $UI/HUD/Achievements.text = "Badges: " + ", ".join(Game.achievements.keys())
     var lines := []
     for record in Game.records:

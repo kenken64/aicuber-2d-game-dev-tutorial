@@ -50,7 +50,7 @@ window.finalGameGuide = [
     steps:[
       'Open Project → Project Settings → Input Map. Add p1_left, p1_right, p1_jump, p1_crouch, p1_roll, p1_attack, p1_interact, the same seven p2_ actions, plus toggle_coop, pause, and restart.',
       'Bind P1 to A/D for movement, W for jump, S for crouch, E for roll, Space for attack, and F for interaction. Bind P2 to Left/Right, Up for jump, Down for crouch, Control for roll, Shift for attack, and Return for interaction. Bind toggle_coop to C, pause to Escape, and restart to R. Keep these keyboard events; GamepadBindings.gd adds controller events at run time.',
-      'Build scripts/Player.gd and scripts/GamepadBindings.gd one task at a time below. Attach Player.gd to Player.tscn. In Main set Player1 slot=1 and Player2 slot=2. Use a RectangleShape2D for CollisionShape2D and adjust it to the hero silhouette; keep the feet near the bottom. The script duplicates each player’s rectangle, reduces its height when crouching, and prevents standing under a low ceiling. Configure hurt and death SpriteFrames so damage and defeat play visibly; the example still works if your art does not include them.',
+      'Build scripts/Player.gd and scripts/GamepadBindings.gd one task at a time below. Attach Player.gd to Player.tscn. In Main set Player1 slot=1 and Player2 slot=2. Use a RectangleShape2D for CollisionShape2D and adjust it to the hero silhouette; keep the feet near the bottom. The script duplicates each player’s rectangle, reduces its height when crouching, and prevents standing under a low ceiling. Configure hurt and death SpriteFrames so damage and defeat play visibly; the example still works if your art does not include them. Set max_jumps to 2 for a double jump; it resets when the hero lands.',
       'Once Main.gd is attached in Section 6, the first connected pad controls P1 in solo play. In local co-op, it controls P2 while P1 uses the keyboard or a second pad. The script maps left stick/D-pad to move, stick down or D-pad down to crouch, A jump, B roll, X attack, Y interact, Back to join P2, Start to pause, and right shoulder to restart.',
       'The cloud editor runs on a remote Linux desktop. Test a physical pad only if that desktop forwards it to Godot; if Input.get_connected_joypads() is empty, run a downloaded project locally for the controller check. For online play later, the host uses remote_axis, remote_jump, remote_crouch, remote_roll, and remote_attack for Player2.'
     ],
@@ -174,10 +174,12 @@ static func describe(action: String) -> String:
 @export var slot := 1
 @export var speed := 220.0
 @export var jump_speed := -430.0
+@export_range(1, 4) var max_jumps := 2
 var active := true
 var remote_controlled := false
 var remote_axis := 0.0
 var remote_jump := false
+var jumps_used := 0
 var remote_roll := false
 var remote_crouch := false
 var remote_attack := false
@@ -230,8 +232,14 @@ func _physics_process(delta: float) -> void:
         roll_time = 0.28
         roll_cooldown = 0.7
     velocity.x = facing * speed * 1.65 if roll_time > 0.0 else (0.0 if crouching else axis * speed)
-    if jump_now and not crouching and is_on_floor():
+    if is_on_floor():
+        jumps_used = 0
+    elif jumps_used == 0:
+        # Walking off an edge uses the grounded jump; one air jump remains.
+        jumps_used = 1
+    if jump_now and not crouching and jumps_used < max_jumps:
         velocity.y = jump_speed
+        jumps_used += 1
     sprite.flip_h = facing < 0
     if attack_now and attack_wait <= 0.0:
         attack_wait = 0.4
@@ -290,7 +298,7 @@ func hurt() -> void:
 
 func heal() -> void:
     health = mini(3, health + 1)`}],
-    check:'P1 moves with A/D, jumps with W, crouches with S, rolls with E, and attacks with Space. Verify the crouching collision shape fits beneath a low ceiling and cannot stand while the ceiling is overhead. In Section 6, test the first connected pad with both stick and D-pad; C or Back will then activate P2.'
+    check:'P1 moves with A/D, jumps with W, crouches with S, rolls with E, and attacks with Space. Press jump a second time in the air for a double jump; a third press does nothing until landing. Verify the crouching collision shape fits beneath a low ceiling and cannot stand while the ceiling is overhead. In Section 6, test the first connected pad with both stick and D-pad; C or Back will then activate P2.'
   },
   {
     id:'pickups',title:'4. Collect coins and survive hazards',modules:'6 Item spawning · 8 Game loop · 11 Physics',
@@ -944,7 +952,7 @@ func _update_hud() -> void:
     $UI/HUD/Player2Health.value = p2.health
     $UI/HUD/Player2Health.visible = p2.active
     $UI/HUD/Player2HealthLabel.visible = p2.active
-    $UI/HUD/Hint.text = "Use Controls to change keys or gamepad. Boss: %s  Room: %s" % ["done" if Game.boss_defeated else "alive", online.code]
+    $UI/HUD/Hint.text = "Press jump twice for a double jump. Controls: change keys or gamepad. Boss: %s  Room: %s" % ["done" if Game.boss_defeated else "alive", online.code]
     $UI/HUD/Achievements.text = "Badges: " + ", ".join(Game.achievements.keys())
     var lines := []
     for record in Game.records:

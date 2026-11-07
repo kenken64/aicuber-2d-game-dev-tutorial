@@ -70,6 +70,7 @@ window.finalGameWalkthrough = {
     flow: [
       'Each physics tick reads this player’s action names. Online guests supply the same movement and button presses through remote_* values.',
       'The script applies gravity, movement, jump, roll, facing, and a short attack cooldown before move_and_slide resolves collisions.',
+      'Press jump twice for a double jump; the counter resets on landing and walking off a ledge leaves one air jump.',
       'Holding crouch changes the pose and the player’s own rectangular collision shape. The hero stays crouched beneath a low ceiling.',
       'Damage plays hurt frames while health remains; zero health plays the non-looping death frames before the game-over panel appears.',
       'After movement it chooses an animation. hurt and heal change health when hazards, enemies, or pickups call them.'

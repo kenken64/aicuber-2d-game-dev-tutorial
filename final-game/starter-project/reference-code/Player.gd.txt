@@ -3,10 +3,12 @@ extends CharacterBody2D
 @export var slot := 1
 @export var speed := 220.0
 @export var jump_speed := -430.0
+@export_range(1, 4) var max_jumps := 2
 var active := true
 var remote_controlled := false
 var remote_axis := 0.0
 var remote_jump := false
+var jumps_used := 0
 var remote_roll := false
 var remote_crouch := false
 var remote_attack := false
@@ -59,8 +61,14 @@ func _physics_process(delta: float) -> void:
         roll_time = 0.28
         roll_cooldown = 0.7
     velocity.x = facing * speed * 1.65 if roll_time > 0.0 else (0.0 if crouching else axis * speed)
-    if jump_now and not crouching and is_on_floor():
+    if is_on_floor():
+        jumps_used = 0
+    elif jumps_used == 0:
+        # Walking off an edge uses the grounded jump; one air jump remains.
+        jumps_used = 1
+    if jump_now and not crouching and jumps_used < max_jumps:
         velocity.y = jump_speed
+        jumps_used += 1
     sprite.flip_h = facing < 0
     if attack_now and attack_wait <= 0.0:
         attack_wait = 0.4
