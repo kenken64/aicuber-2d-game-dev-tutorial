@@ -193,14 +193,14 @@ func _apply_state(state: Dictionary) -> void:
     if Game.ending != "" and Game.ending != last_ending:
         last_ending = Game.ending
         level.finished = true
-        level._show_result("Host chose to %s the relic." % Game.ending, false)
+        level._show_result("Host chose to %s the relic." % Game.ending, false, true)
     elif bool(state.get("finished", false)) and not level.finished:
         level.finished = true
         if bool(state.get("game_over", false)):
             level.game_over = true
             level._game_over_after_animation()
         else:
-            level._show_result("Host reached the relic. Waiting for their choice…", false)
+            level._show_result("Host reached the relic. Waiting for their choice…", false, true)
 
 func _remove_missing(parent_name: String, names: Array) -> void:
     for child in level.get_node(parent_name).get_children():

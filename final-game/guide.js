@@ -577,7 +577,7 @@ func hit(amount: int = 1) -> void:
     steps:[
       'Under UI add HUD (Control) with Stats, Hint, Story, Achievements, Leaderboard, Player1HealthLabel, Player2HealthLabel (Labels), Player1Health and Player2Health (ProgressBars), and Volume (HSlider). Set both health bars Min to 0, Max to 3, Value to 3 and hide Percentage. Main updates them from each player’s health. Add ShopPanel (Control) with BuyButton, SellButton, SalvageButton. Add ControlsButton, HostButton, JoinButton (Buttons) and RoomCode (LineEdit) for Section 8.',
       'Under UI add a Control named ControlsMenu and attach scripts/ControlsMenu.gd below. The script builds the rows and buttons when the game starts; keep the root hidden in the editor. Each row can remap one keyboard key or gamepad button/axis for P1, P2, or a shared action.',
-      'Under UI add Finale (Control) with Result and Credits (Labels) and KeepButton, ReturnButton, RestartButton (Buttons). Make Finale fill the viewport and enable Clip Contents. Hide it by default. Main.gd sets UI to Always and gameplay branches to Pausable so Escape can resume a paused run.',
+      'Under UI add Finale (Control) with VictoryArt (TextureRect), VictoryTitle, Result and Credits (Labels), and KeepButton, ReturnButton, RestartButton (Buttons). Assign assets/final-game/victory-crest.png to VictoryArt, set Expand Mode to Ignore Size and Stretch Mode to Keep Aspect Centered. Place the crest and title at the top, Result below the title, and the three buttons in a row below them. Name RestartButton’s text Play Again. Size Finale as a centered panel and enable Clip Contents; hide it by default. Main.gd sets UI to Always and gameplay branches to Pausable so Escape can resume a paused run.',
       'Attach Main.gd below to Main. Also attach the small Online.gd placeholder to Online; replace that file with the full version in Section 8. Shop and Exit each need a CollisionShape2D and Monitoring on. Enter Shop: F or gamepad Y buys a heart for five coins; the panel buys a Forest Blade for eight coins, sells it for four, or salvages it for one material at a two-coin fee.',
       'Press C or gamepad Back to activate Player2. The first pad switches to P2; P1 keeps the keyboard or uses a second pad. Both share coins and score, but each has three hearts. The player collision exceptions in Main.gd let P1 pass through the hidden P2 and keep both players from blocking each other.',
       'Drag the Volume slider while the game runs. The Controls button or pause action opens the paused controls menu; choose a binding, then press a key, controller button, or move a stick. Escape cancels capture; use Close / Resume or UI Cancel to return. Restore defaults resets bindings. Controls save to user://controls.cfg; records and achievements use user://final_save.json.'
@@ -990,18 +990,41 @@ func _on_exit(body) -> void:
     finished = true
     p1.active = false
     p2.active = false
-    _show_result("You found the relic. Keep it or return it?", true)
+    _show_result("You found the relic. Keep it or return it?", true, true)
 
 func _game_over_after_animation() -> void:
     await get_tree().create_timer(0.9).timeout
-    _show_result("Game over. Press Restart to try again.", false)
+    _show_result("Game over. Press Play Again to try again.", false)
 
-func _show_result(message: String, choices: bool) -> void:
+func _show_result(message: String, choices: bool, passed: bool = false) -> void:
+    var art: TextureRect = $UI/Finale/VictoryArt
+    var title: Label = $UI/Finale/VictoryTitle
+    var already_celebrating := finale.visible and art.visible
     finale.show()
+    art.visible = passed
+    title.text = "LEVEL PASSED!" if passed else ("GAME OVER" if game_over else "RESULT")
+    title.show()
     $UI/Finale/Result.text = message
     $UI/Finale/KeepButton.visible = choices
     $UI/Finale/ReturnButton.visible = choices
     $UI/Finale/Credits.text = ""
+    if passed and not already_celebrating:
+        art.pivot_offset = art.size / 2.0
+        art.scale = Vector2(0.35, 0.35)
+        art.rotation = -0.25
+        art.modulate.a = 0.0
+        title.pivot_offset = title.size / 2.0
+        title.scale = Vector2(0.8, 0.8)
+        title.modulate.a = 0.0
+        var celebration := create_tween().set_parallel(true)
+        celebration.tween_property(art, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        celebration.tween_property(art, "rotation", 0.0, 0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        celebration.tween_property(art, "modulate:a", 1.0, 0.3)
+        celebration.tween_property(title, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        celebration.tween_property(title, "modulate:a", 1.0, 0.4)
+    elif not passed:
+        title.scale = Vector2.ONE
+        title.modulate.a = 1.0
 
 func _choose(choice: String) -> void:
     Game.finish(choice)
@@ -1039,7 +1062,7 @@ func join_room(_room_code: String) -> void:
     summary:'The level needs a real finish condition, player choice, short cutscene, and credits—not just a boss that disappears.',
     steps:[
       'Set a title and opening line in HUD/Story. Give the two enemy types and boss names using Label nodes or artwork. Replace the sample forest text in Main.gd with the story you wrote in Module 4.',
-      'At the exit, Main.gd checks that 20 coins were collected and the boss was defeated. Walk through it to show the choice panel. Keep and Return are two different ending decisions. Replace the sample Result text with your own outcome for each choice.',
+      'At the exit, Main.gd checks that 20 coins were collected and the boss was defeated. Walk through it to show LEVEL PASSED and animate the generated victory crest with a Tween. Play Again starts a fresh run immediately. Keep and Return are optional ending decisions; choose one to save the ending and leaderboard record before replaying. Replace the sample Result text with your own outcome for each choice.',
       'Main.gd fades in the result and scrolls the Credits label with a Tween. Fill Credits with the people and asset sources for your game, then add an AnimationPlayer to animate the relic or camera if you want a richer cutscene.',
       'Finish once with each choice. Confirm coin_collector, boss_breaker, first_purchase, and finished_game appear in Game.achievements, and that the next run shows a leaderboard record.'
     ],
@@ -1249,14 +1272,14 @@ func _apply_state(state: Dictionary) -> void:
     if Game.ending != "" and Game.ending != last_ending:
         last_ending = Game.ending
         level.finished = true
-        level._show_result("Host chose to %s the relic." % Game.ending, false)
+        level._show_result("Host chose to %s the relic." % Game.ending, false, true)
     elif bool(state.get("finished", false)) and not level.finished:
         level.finished = true
         if bool(state.get("game_over", false)):
             level.game_over = true
             level._game_over_after_animation()
         else:
-            level._show_result("Host reached the relic. Waiting for their choice…", false)
+            level._show_result("Host reached the relic. Waiting for their choice…", false, true)
 
 func _remove_missing(parent_name: String, names: Array) -> void:
     for child in level.get_node(parent_name).get_children():
@@ -1299,7 +1322,7 @@ func _sync_actor(actor, data: Dictionary) -> void:
     steps:[
       'Run from the opening story/start area to the exit without using the editor. Test solo first, then local co-op, then an online room with two running project copies.',
       'Check that all 20 coins are reachable, both enemy types can be beaten, the shop actually spends coins, the boss has two phases, and the exit cannot open early.',
-      'Test monster contact damage, the health bars, hurt and death animations, game-over and restart, the controls menu, pause and volume, both ending choices, credits, achievements, and leaderboard persistence after restarting.',
+      'Test monster contact damage, the health bars, hurt and death animations, game-over and Play Again, the controls menu, pause and volume, the victory animation and immediate replay, both ending choices, credits, achievements, and leaderboard persistence after restarting.',
       'Replace placeholder text and art with your own finished assets. Credit any shared lesson art. Back up your local project folder, or download the current project ZIP before deleting a cloud workspace. Open the backup once to confirm it contains Main.tscn and your scripts.'
     ],
     check:'A fresh playthrough reaches credits without a Debugger error, and your project backup contains the finished level and scripts.'

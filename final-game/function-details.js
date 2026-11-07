@@ -260,11 +260,12 @@ window.finalGameFunctionDetails = {
       ['if finished or not body.is_in_group("heroes") or not body.active:', 'Ignore repeat entry, nonheroes, and inactive players.'],
       ['if Game.collected < 20 or not Game.boss_defeated:', 'Keep the exit locked until both the coin goal and boss defeat are complete.'],
       ['finished = true', 'Stop gameplay and deactivate both heroes.'],
-      ['_show_result("You found the relic. Keep it or return it?", true)', 'Open the final choice panel.']
+      ['_show_result("You found the relic. Keep it or return it?", true, true)', 'Open the final choice panel.']
     ],
     _game_over_after_animation: [['await get_tree().create_timer(0.9).timeout', 'Give the death animation time to play before the game-over panel appears.']],
     _show_result: [
       ['finale.show()', 'Display the finale layer.'],
+      ['celebration.tween_property(art, "scale", Vector2.ONE, 0.7)', 'Animate the generated victory crest into view; the title fades in alongside it.'],
       ['$UI/Finale/Result.text = message', 'Set the supplied ending or game-over message.'],
       ['$UI/Finale/KeepButton.visible = choices', 'Show both choice buttons only when the player may choose an ending; clear old credits.']
     ],

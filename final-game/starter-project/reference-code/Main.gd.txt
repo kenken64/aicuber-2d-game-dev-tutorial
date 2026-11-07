@@ -142,18 +142,41 @@ func _on_exit(body) -> void:
     finished = true
     p1.active = false
     p2.active = false
-    _show_result("You found the relic. Keep it or return it?", true)
+    _show_result("You found the relic. Keep it or return it?", true, true)
 
 func _game_over_after_animation() -> void:
     await get_tree().create_timer(0.9).timeout
-    _show_result("Game over. Press Restart to try again.", false)
+    _show_result("Game over. Press Play Again to try again.", false)
 
-func _show_result(message: String, choices: bool) -> void:
+func _show_result(message: String, choices: bool, passed: bool = false) -> void:
+    var art: TextureRect = $UI/Finale/VictoryArt
+    var title: Label = $UI/Finale/VictoryTitle
+    var already_celebrating := finale.visible and art.visible
     finale.show()
+    art.visible = passed
+    title.text = "LEVEL PASSED!" if passed else ("GAME OVER" if game_over else "RESULT")
+    title.show()
     $UI/Finale/Result.text = message
     $UI/Finale/KeepButton.visible = choices
     $UI/Finale/ReturnButton.visible = choices
     $UI/Finale/Credits.text = ""
+    if passed and not already_celebrating:
+        art.pivot_offset = art.size / 2.0
+        art.scale = Vector2(0.35, 0.35)
+        art.rotation = -0.25
+        art.modulate.a = 0.0
+        title.pivot_offset = title.size / 2.0
+        title.scale = Vector2(0.8, 0.8)
+        title.modulate.a = 0.0
+        var celebration := create_tween().set_parallel(true)
+        celebration.tween_property(art, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        celebration.tween_property(art, "rotation", 0.0, 0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        celebration.tween_property(art, "modulate:a", 1.0, 0.3)
+        celebration.tween_property(title, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        celebration.tween_property(title, "modulate:a", 1.0, 0.4)
+    elif not passed:
+        title.scale = Vector2.ONE
+        title.modulate.a = 1.0
 
 func _choose(choice: String) -> void:
     Game.finish(choice)

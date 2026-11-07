@@ -19,3 +19,5 @@ Default P1 controls are A/D to move, W to jump, S to crouch, E to roll, Space to
 Press jump twice before landing to double jump. The Player.gd example exposes `max_jumps` in the Inspector (default 2); landing resets the count.
 
 The starter also includes `forest-spikes.png` and `forest-pool-cutaway.png`. Fit a hazard Area2D to the spikes. For a recessed pool, split the terrain collision around the water, add a shallow pool-bottom collision and soil below, and place the boulder above it. Put at least three hearts in safe positions; the reference Pickup script leaves hearts available until a living player needs healing.
+
+In Section 6, add `VictoryArt` (TextureRect using `assets/final-game/victory-crest.png`) and `VictoryTitle` (Label) under Finale. Section 7 animates the generated crest and title on victory; Play Again immediately starts a fresh run. Choosing Keep or Return saves the ending and leaderboard record before replay.
