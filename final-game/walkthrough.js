@@ -97,7 +97,7 @@ window.finalGameWalkthrough = {
   'scripts/Pickup.gd': {
     flow: [
       '_ready chooses the coin or heart texture and connects the Area2D body_entered signal to the pickup handler.',
-      'Only an active hero may collect it. A coin updates Game; a heart heals the hero and may unlock a badge.',
+      'Only an active hero may collect it. A coin updates Game; a heart heals an injured living hero and unlocks a badge. A full-health hero leaves the heart in place.',
       'queue_free removes the pickup so it cannot be collected twice.'
     ],
     symbols: {

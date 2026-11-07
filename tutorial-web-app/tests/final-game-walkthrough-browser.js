@@ -95,7 +95,7 @@ try {
     assert.match(examples.main, /p1\.add_collision_exception_with\(p2\)/);
     assert.ok(examples.main.includes('CREDITS\\nDesign: your name'));
     assert.match(examples.pickup, /heart_texture/);
-    for (const name of ['GamepadBindings', 'ControlsMenu', 'Player', 'Enemy', 'Main']) {
+    for (const name of ['GamepadBindings', 'ControlsMenu', 'Player', 'Enemy', 'Main', 'Pickup']) {
       const expected = await readFile(new URL(`../../final-game/starter-project/reference-code/${name}.gd.txt`, import.meta.url), 'utf8');
       const shown = await page.evaluate(fileName => window.finalGameGuide.flatMap(section => section.files || [])
         .find(file => file.name === `scripts/${fileName}.gd`).code, name);

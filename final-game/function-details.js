@@ -152,7 +152,7 @@ window.finalGameFunctionDetails = {
     _on_body_entered: [
       ['if not body.is_in_group("heroes") or not body.active:', 'Ignore enemies, scenery, and inactive heroes.'],
       ['Game.collect_coin()', 'A coin updates the shared wallet, level count, and score.'],
-      ['if body.health < 3:', 'Award the healing badge only when the heart can restore missing health.'],
+      ['if body.health <= 0 or body.health >= 3:', 'Keep the heart available unless a living player has missing health.'],
       ['body.heal()', 'Ask Player.gd to apply its health cap.'],
       ['queue_free()', 'Remove this pickup after handling it so it cannot be collected twice.']
     ]

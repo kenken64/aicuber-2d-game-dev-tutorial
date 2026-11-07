@@ -21,7 +21,7 @@ window.finalGameGuide = [
       'Create scenes/Player.tscn: CharacterBody2D → AnimatedSprite2D, CollisionShape2D, Camera2D. Slice your hero sheet in SpriteFrames; name idle, run, jump, crouch, attack, roll, hurt, and death if your sheet has those frames. Turn Loop off for hurt and death. Make Camera2D current only on Player1.',
       'Create scenes/Enemy.tscn: CharacterBody2D → AnimatedSprite2D, CollisionShape2D. Duplicate instances for two normal enemy types and the boss; assign their own SpriteFrames and collision shapes.',
       'Create scenes/Pickup.tscn: Area2D → Sprite2D, CollisionShape2D. Duplicate it 20 times for coins, then add a few hearts. Create a separate Area2D with CollisionShape2D for each hazard, the Shop, and Exit. Add a Sprite2D to Shop and assign assets/final-game/forest-shop.png; add a Sprite2D to Exit and assign assets/final-game/forest-portal.png. Scale and position each sprite so its base touches the ground; keep the Area2D collision shapes around the player interaction zones.',
-      'Use the Module 11 pool, boulder, and splash art if it fits your theme. Water gets a pool Sprite2D and CollisionShape2D; Boulder uses Sprite2D and CollisionShape2D. Put Boulder above Water so gravity produces a visible splash.',
+      'Use assets/final-game/forest-pool-cutaway.png for a side-on pool and the Module 11 boulder and splash art. Split the floor and repeating ground image around the pool, put a solid pool-bottom collision shape below the surface, and fill the soil below it. Place Water and Boulder away from Shop; drop the boulder above the water so it splashes and settles below ground level. Make the pool shallow enough to jump out.',
       'Place Player1 at the safe start, Player2 beside them, Shop before the boss, Exit after the boss. Set the boss instance Inspector property boss to On after attaching Enemy.gd in Section 5.'
     ],
     tree:`Main (Node2D) [Main.gd]
@@ -305,8 +305,8 @@ func heal() -> void:
     summary:'Coins fund the shop and count toward the exit. A timer creates bonus pickups at safe markers, and defeated enemies drop loot.',
     steps:[
       'Create scripts/Game.gd as an Autoload named Game in Project → Project Settings → Globals. Build it in small steps below before writing Pickup.gd.',
-      'Attach Pickup.gd to Pickup.tscn. Set the Pickup Sprite2D texture to a coin and assign heart_texture in the Pickup root Inspector, then save the reusable scene. Set kind=coin on 20 instances and kind=heart on health pickups. Give every instance a unique node name; keep all instances under Main/Pickups.',
-      'Create Hazard.tscn as Area2D → CollisionShape2D, add your hazard Sprite2D, and attach Hazard.gd. Place hazards where players can jump over or around them.',
+      'Attach Pickup.gd to Pickup.tscn. Set the Pickup Sprite2D texture to a coin and assign heart_texture in the Pickup root Inspector, then save the reusable scene. Set kind=coin on 20 instances and kind=heart on at least three health pickups spread across the level. A heart restores one health only when a living player is injured, and remains available at full health. Give every instance a unique node name; keep all instances under Main/Pickups.',
+      'Create Hazard.tscn as Area2D → CollisionShape2D, add a Sprite2D using assets/final-game/forest-spikes.png, and attach Hazard.gd. Align the spike base with the floor and fit the collision shape to the visible points. Place hazards where players can jump over or around them.',
       'Add five Marker2D children under SpawnPoints, placed on safe platforms. Attach Spawner.gd to Spawner, assign scenes/Pickup.tscn to pickup_scene in the Inspector, and set its Timer wait time to 12 seconds with Autostart on. BonusPickups holds these timed items and enemy loot.',
       'Create scenes/Splash.tscn as Node2D → Sprite2D with the splash image, and attach Splash.gd. Attach Water.gd to Water and assign scenes/Splash.tscn to splash_scene. Add Boulder to the boulders group in the Node → Groups tab. Use a RigidBody2D so Godot gravity drops it into the pool.',
       'In each Area2D Inspector, enable Monitoring and set its collision mask so it detects Player bodies; Water must also detect Boulder. Use Debug → Visible Collision Shapes if an overlap does not register.'
@@ -438,8 +438,9 @@ func _on_body_entered(body) -> void:
     if kind == "coin":
         Game.collect_coin()
     elif kind == "heart":
-        if body.health < 3:
-            Game.unlock("heart_restored")
+        if body.health <= 0 or body.health >= 3:
+            return
+        Game.unlock("heart_restored")
         body.heal()
     queue_free()`},
       {name:'scripts/Hazard.gd',code:`extends Area2D
@@ -498,7 +499,7 @@ func _ready() -> void:
     fade.tween_callback(queue_free)
     create_tween().tween_property(self, "scale", Vector2.ONE, 0.4)`}
     ],
-    check:'A coin disappears on pickup; the Timer creates bonus items; a heart heals; hazards hurt. The boulder falls under gravity and creates a splash when it enters Water.'
+    check:'A coin disappears on pickup; the Timer creates bonus items; a heart heals an injured player and stays in place at full health; spikes hurt. The boulder falls into the recessed pool and splashes, and the player can jump back out.'
   },
   {
     id:'combat',title:'5. Build enemy AI and a boss phase',modules:'3 Boss · 7 Enemies and AI · 8 Game loop',
