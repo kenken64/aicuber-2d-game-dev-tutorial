@@ -64,3 +64,11 @@ The starter remains a blank welcome project for learners to build, and now inclu
 The sample now includes three placed heart pickups that heal only injured living players, a shallow recessed pool with a jumpable exit and separate pool-bottom collision, and a boulder that settles below ground. The pool is separated from the shop. The spike and pool art use GPT Image 2.5 Sunburst; their prompts are recorded with the assets.
 
 The original sample drew water above one continuous floor, leaving the boulder on the ground, and its pool overlapped the shop art. The level now splits the floor around the water, adds a shallow bottom with soil underneath, and spaces the shop farther away. Heart pickups previously disappeared at full health; they now stay in place until an injured living player collects them.
+
+### Fullscreen on desktop
+
+To make the exported game open full screen, set **Project → Project Settings → Display → Window → Size → Mode** to **Fullscreen**. Keep the 1280 × 720 viewport and `canvas_items` stretch mode to preserve the game’s proportions. Use Windowed while working in a cloud editor if fullscreen would cover the workspace, then restore Fullscreen before exporting.
+
+### Menu, HUD, and exit
+
+The sample launch and pause menus offer play/resume, multiplayer, controls and quit. Multiplayer starts a new run and needs a shared reachable relay; the local default reaches only a relay on the same computer. The compact HUD shows coins, score, health and the room status. The exit completes the level as soon as a living active player reaches it; coins and enemies are optional.

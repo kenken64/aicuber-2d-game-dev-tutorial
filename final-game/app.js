@@ -31,7 +31,7 @@ const copy = {
 Object.assign(copy.en, {
   eyebrow: 'CAPSTONE / GODOT PROJECT',
   intro: 'Build one complete 2D level in the Godot cloud editor, using the characters, art, and systems you made across modules 1–18.',
-  briefTitle: 'The one-level challenge', briefBody: 'Create a single journey: start in a safe area, cross a hazard, collect 20 coins, visit a shop, defeat two enemy types and a boss, then make a final choice and reach the credits. Use the same level for solo, local co-op, and online play.',
+  briefTitle: 'The one-level challenge', briefBody: 'Create a single journey: explore a forest with coins, a shop, enemies and a boss, then reach the portal for the ending and credits. Coins and enemy defeats are optional. Use the same level for solo, local co-op, and online play.',
   briefFreedom: 'Make the story and visual theme your own. Keep the full journey playable from start to finish before adding extra polish.',
   kitDescription: 'The ZIP contains a Godot project, published lesson media, animation coordinate files, and an asset catalog. The project opens on a welcome scene that you will replace with your level.',
   savedAssetsTitle: 'Your saved game assets', savedAssetsDescription: 'Characters, bosses, and asset sheets you generated are separate from the shared ZIP. Download your saved PNG and JSON files here, then add them to your Godot project.',
@@ -47,7 +47,7 @@ Object.assign(copy.en, {
 Object.assign(copy.zh, {
   eyebrow: '毕业项目 / GODOT 游戏',
   intro: '在 Godot 云端编辑器中，结合第 1–18 章制作的角色、美术和系统，完成一个完整的 2D 关卡。',
-  briefTitle: '单关卡挑战', briefBody: '制作一次完整的冒险：从安全区域出发，跨越危险，收集 20 枚金币，访问商店，击败两种敌人和首领，做出最终选择并展示制作名单。单人、本地合作和在线模式使用同一关卡。',
+  briefTitle: '单关卡挑战', briefBody: '探索有金币、商店、敌人和首领的森林，到达传送门即可进入结局和制作名单。收集金币及击败敌人均为可选。单人、本地合作和在线模式使用同一关卡。',
   briefFreedom: '故事和视觉主题由你决定。先让完整流程可以通关，再添加细节。',
   kitDescription: 'ZIP 包含 Godot 项目、课程素材、动画坐标文件和素材目录。项目打开后会显示欢迎场景，你将用自己的关卡替换它。',
   savedAssetsTitle: '已保存的游戏素材', savedAssetsDescription: '你生成的角色、首领和素材图不在共享 ZIP 中。请在此下载 PNG 和 JSON 文件，再添加到 Godot 项目。',

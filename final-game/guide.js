@@ -3,7 +3,7 @@
 window.finalGameGuide = [
   {
     id: 'plan', title: '1. Plan one playable journey', modules: '4 Storyline · 8 Game loop',
-    summary: 'Make a forest rescue level. The hero collects 20 coins, crosses a hazard, visits a healing shop, defeats two enemy types and a boss, then chooses what to do with the relic.',
+    summary: 'Make a forest rescue level. The hero crosses a hazard, can collect coins and fight enemies, and chooses what to do with the relic after reaching the portal.',
     steps: [
       'In the FileSystem panel, create folders scenes, scripts, and assets/my-game. Put your own hero, boss, tiles, props, pickups, and UI PNGs in assets/my-game. The lesson art under assets/ is a reference library.',
       'Rename the welcome scene to Main.tscn or create a new 2D scene named Main. Set it as the main scene with Project → Project Settings → Application → Run.',
@@ -314,6 +314,9 @@ func heal() -> void:
     files:[
       {name:'scripts/Game.gd', code:`extends Node
 
+var menu_role := ""
+var menu_room := ""
+var menu_relay := ""
 var coins := 0
 var collected := 0
 var score := 0
@@ -503,7 +506,7 @@ func _ready() -> void:
   },
   {
     id:'combat',title:'5. Build enemy AI and a boss phase',modules:'3 Boss · 7 Enemies and AI · 8 Game loop',
-    summary:'Reuse one enemy script for two ordinary types and the boss. The boss changes speed below half health and unlocks the exit when defeated.',
+    summary:'Reuse one enemy script for two ordinary types and the boss. The boss changes speed below half health. The exit can be reached independently of the combat encounters.',
     steps:[
       'Attach Enemy.gd to Enemy.tscn. Set patrol_left and patrol_right for each instance in the Inspector; these are offsets from its starting point. Use different sprite frames and speeds for the two normal types.',
       'Set boss=On and health_points=8 on the Boss instance. Add an arena floor that keeps the fight readable. Adjust attack_range so the boss can reach a player without instantly overlapping them. Assign scenes/Pickup.tscn to loot_scene on each regular enemy.',
@@ -578,11 +581,14 @@ func hit(amount: int = 1) -> void:
       'Under UI add HUD (Control) with Stats, Hint, Story, Achievements, Leaderboard, Player1HealthLabel, Player2HealthLabel (Labels), Player1Health and Player2Health (ProgressBars), and Volume (HSlider). Set both health bars Min to 0, Max to 3, Value to 3 and hide Percentage. Main updates them from each player’s health. Add ShopPanel (Control) with BuyButton, SellButton, SalvageButton. Add ControlsButton, HostButton, JoinButton (Buttons) and RoomCode (LineEdit) for Section 8.',
       'Under UI add a Control named ControlsMenu and attach scripts/ControlsMenu.gd below. The script builds the rows and buttons when the game starts; keep the root hidden in the editor. Each row can remap one keyboard key or gamepad button/axis for P1, P2, or a shared action.',
       'Under UI add Finale (Control). Add these children in this drawing order: Backdrop (ColorRect), Background (Panel), VictoryArt (TextureRect), DefeatIcon, Eyebrow, VictoryTitle, Result, Score, Credits (Labels), then KeepButton, ReturnButton and RestartButton (Buttons). Assign assets/final-game/victory-crest.png to VictoryArt, set Expand Mode to Ignore Size and Stretch Mode to Keep Aspect Centered. Hide Finale by default. Main.gd sizes and styles the full-screen overlay, centers the result card, and sets UI to Always so Escape can resume a paused run.',
-      'Attach Main.gd below to Main. Also attach the small Online.gd placeholder to Online; replace that file with the full version in Section 8. Shop and Exit each need a CollisionShape2D and Monitoring on. Enter Shop: F or gamepad Y buys a heart for five coins; the panel buys a Forest Blade for eight coins, sells it for four, or salvages it for one material at a two-coin fee.',
+      'Under UI add AdventureMenu (Control) and attach scripts/AdventureMenu.gd below. It builds the styled pause and multiplayer menus; keep it hidden in Main. Attach Main.gd below to Main. Also attach the small Online.gd placeholder to Online; replace that file with the full version in Section 8. Shop and Exit each need a CollisionShape2D and Monitoring on. Enter Shop: F or gamepad Y buys a heart for five coins; the panel buys a Forest Blade for eight coins, sells it for four, or salvages it for one material at a two-coin fee.',
+      'Create scenes/StartMenu.tscn with a Control root, a UI CanvasLayer, and UI children named AdventureMenu and ControlsMenu. Attach their matching scripts and set StartMenu.tscn as the Project Settings main scene. The same AdventureMenu script provides the in-game pause menu. The multiplayer form opens a new run, displays its room code in the HUD, and accepts a ws:// or wss:// relay reachable by both players.',
       'Press C or gamepad Back to activate Player2. The first pad switches to P2; P1 keeps the keyboard or uses a second pad. Both share coins and score, but each has three hearts. The player collision exceptions in Main.gd let P1 pass through the hidden P2 and keep both players from blocking each other.',
-      'Drag the Volume slider while the game runs. The Controls button or pause action opens the paused controls menu; choose a binding, then press a key, controller button, or move a stick. Escape cancels capture; use Close / Resume or UI Cancel to return. Restore defaults resets bindings. Controls save to user://controls.cfg; records and achievements use user://final_save.json.'
+      'Open Menu or press the pause action, then choose Controls & Gamepad. Adjust Volume in that menu; choose a binding, then press a key, controller button, or move a stick. Escape cancels capture; use Close / Resume or UI Cancel to return. Restore defaults resets bindings. Controls save to user://controls.cfg; records and achievements use user://final_save.json.'
     ],
     files:[{name:'scripts/ControlsMenu.gd',code:`extends Control
+
+signal menu_closed
 
 const GamepadBindings = preload("res://scripts/GamepadBindings.gd")
 const SAVE_PATH := "user://controls.cfg"
@@ -631,6 +637,12 @@ func _build_menu() -> void:
     panel.offset_right = -145
     panel.offset_top = 28
     panel.offset_bottom = -28
+    var panel_style := StyleBoxFlat.new()
+    panel_style.bg_color = Color("142b23")
+    panel_style.border_color = Color("8f8652")
+    panel_style.set_border_width_all(1)
+    panel_style.set_corner_radius_all(22)
+    panel.add_theme_stylebox_override("panel", panel_style)
     add_child(panel)
     var margin = MarginContainer.new()
     for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
@@ -642,6 +654,7 @@ func _build_menu() -> void:
     var title = Label.new()
     title.text = "CONTROLS & GAMEPAD"
     title.add_theme_font_size_override("font_size", 26)
+    title.add_theme_color_override("font_color", Color("f4d98b"))
     column.add_child(title)
     var help = Label.new()
     help.text = "Select a binding, then press a key or gamepad button / stick. Esc cancels."
@@ -689,6 +702,17 @@ func _build_menu() -> void:
         pad_buttons[action] = pad
     var footer = HBoxContainer.new()
     column.add_child(footer)
+    var volume_label := Label.new()
+    volume_label.text = "Volume"
+    footer.add_child(volume_label)
+    var volume := HSlider.new()
+    volume.custom_minimum_size.x = 120
+    volume.min_value = 0.0
+    volume.max_value = 1.0
+    volume.step = 0.05
+    volume.value = db_to_linear(AudioServer.get_bus_volume_db(0))
+    volume.value_changed.connect(func(value: float): AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001))))
+    footer.add_child(volume)
     var reset = Button.new()
     reset.text = "Restore defaults"
     reset.pressed.connect(_restore_defaults)
@@ -715,6 +739,7 @@ func close_menu() -> void:
     awaiting_kind = ""
     hide()
     get_tree().paused = was_paused
+    menu_closed.emit()
 
 func _begin_capture(action: String, kind: String) -> void:
     awaiting_action = action
@@ -805,7 +830,7 @@ func _refresh() -> void:
 
 func _apply_gamepads() -> void:
     GamepadBindings.set_overrides(pad_overrides)
-    if not level.is_node_ready():
+    if not level.is_node_ready() or not level.has_method("_assign_gamepads"):
         return
     level.p1_pad = -2
     level.p2_pad = -2
@@ -846,6 +871,236 @@ func _restore_defaults() -> void:
     _save_settings()
     _refresh()
     status.text = "Default keyboard and gamepad bindings restored."`},
+      {name:'scripts/AdventureMenu.gd',code:`extends Control
+
+const FOREST = preload("res://assets/parallax-tiling-map/images/parallax-far.webp")
+const CREST = preload("res://assets/final-game/victory-crest.png")
+const DEFAULT_RELAY = "ws://127.0.0.1:3000/ws/final-game"
+var level: Node
+var panel: PanelContainer
+var column: VBoxContainer
+var heading: Label
+var content: VBoxContainer
+var room_field: LineEdit
+var relay_field: LineEdit
+var status: Label
+var is_game := false
+var page := "home"
+
+func _ready() -> void:
+    process_mode = Node.PROCESS_MODE_ALWAYS
+    set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    level = get_parent().get_parent()
+    is_game = level.has_node("Online")
+    _build()
+    if is_game:
+        hide()
+    else:
+        _home()
+
+func _box(fill: Color, border: Color, radius: int = 14) -> StyleBoxFlat:
+    var style := StyleBoxFlat.new()
+    style.bg_color = fill
+    style.border_color = border
+    style.set_border_width_all(1)
+    style.set_corner_radius_all(radius)
+    return style
+
+func _build() -> void:
+    if not is_game:
+        var forest := TextureRect.new()
+        forest.texture = FOREST
+        forest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+        forest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+        forest.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+        forest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        add_child(forest)
+    var shade := ColorRect.new()
+    shade.color = Color(0.015, 0.035, 0.03, 0.82)
+    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    add_child(shade)
+    panel = PanelContainer.new()
+    panel.set_anchors_preset(Control.PRESET_CENTER)
+    panel.offset_left = -300
+    panel.offset_right = 300
+    panel.offset_top = -300
+    panel.offset_bottom = 300
+    panel.add_theme_stylebox_override("panel", _box(Color("142b23"), Color("8f8652"), 22))
+    add_child(panel)
+    var margin := MarginContainer.new()
+    for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+        margin.add_theme_constant_override(side, 26)
+    panel.add_child(margin)
+    column = VBoxContainer.new()
+    column.add_theme_constant_override("separation", 10)
+    margin.add_child(column)
+    var art := TextureRect.new()
+    art.texture = CREST
+    art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    art.custom_minimum_size.y = 88
+    column.add_child(art)
+    var eyebrow := Label.new()
+    eyebrow.text = "A   F O R E S T   A D V E N T U R E"
+    eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    eyebrow.add_theme_font_size_override("font_size", 13)
+    eyebrow.add_theme_color_override("font_color", Color("b7c5ad"))
+    column.add_child(eyebrow)
+    heading = Label.new()
+    heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    heading.add_theme_font_size_override("font_size", 36)
+    heading.add_theme_color_override("font_color", Color("f4d98b"))
+    column.add_child(heading)
+    content = VBoxContainer.new()
+    content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    content.alignment = BoxContainer.ALIGNMENT_CENTER
+    content.add_theme_constant_override("separation", 10)
+    column.add_child(content)
+
+func _clear() -> void:
+    for child in content.get_children():
+        content.remove_child(child)
+        child.queue_free()
+
+func _button(text: String, action: Callable, primary: bool = false) -> Button:
+    var button := Button.new()
+    button.text = text
+    button.custom_minimum_size.y = 48
+    button.add_theme_font_size_override("font_size", 18)
+    button.add_theme_color_override("font_color", Color("1a2c20") if primary else Color("edf1df"))
+    button.add_theme_color_override("font_hover_color", Color("1a2c20") if primary else Color.WHITE)
+    button.add_theme_color_override("font_focus_color", Color("1a2c20") if primary else Color("edf1df"))
+    button.add_theme_color_override("font_pressed_color", Color("1a2c20") if primary else Color.WHITE)
+    button.add_theme_stylebox_override("normal", _box(Color("e5c86e") if primary else Color("203b30"), Color("e5c86e") if primary else Color("668671"), 10))
+    button.add_theme_stylebox_override("hover", _box(Color("f4dc8f") if primary else Color("315a44"), Color("f7e3a0"), 10))
+    button.add_theme_stylebox_override("focus", _box(Color(0, 0, 0, 0), Color("fff1b4"), 10))
+    button.pressed.connect(action)
+    content.add_child(button)
+    return button
+
+func _home() -> void:
+    _clear()
+    page = "home"
+    heading.text = "PAUSED" if is_game else "THE SLEEPING GROVE"
+    var start = _button("RESUME" if is_game else "START ADVENTURE", _resume if is_game else _start_solo, true)
+    _button("MULTIPLAYER", _multiplayer)
+    _button("CONTROLS & GAMEPAD", _controls)
+    _button("PROGRESS & SCORES", _progress)
+    _button("QUIT GAME", _quit)
+    start.grab_focus()
+
+func open_menu() -> void:
+    get_tree().paused = true
+    show()
+    _home()
+
+func _resume() -> void:
+    hide()
+    get_tree().paused = false
+
+func _controls() -> void:
+    var controls = level.get_node("UI/ControlsMenu")
+    controls.menu_closed.connect(_return_from_controls, CONNECT_ONE_SHOT)
+    hide()
+    controls.open_menu()
+
+func _return_from_controls() -> void:
+    show()
+    _home()
+
+func _quit() -> void:
+    get_tree().paused = false
+    get_tree().quit()
+
+func _start_solo() -> void:
+    Game.menu_role = ""
+    get_tree().change_scene_to_file("res://scenes/Main.tscn")
+
+func _field(placeholder: String, initial: String = "") -> LineEdit:
+    var field := LineEdit.new()
+    field.placeholder_text = placeholder
+    field.text = initial
+    field.custom_minimum_size.y = 40
+    field.add_theme_font_size_override("font_size", 16)
+    var normal := _box(Color("203b30"), Color("668671"), 8)
+    var focused := _box(Color("203b30"), Color("f4d98b"), 8)
+    normal.content_margin_left = 12
+    focused.content_margin_left = 12
+    field.add_theme_stylebox_override("normal", normal)
+    field.add_theme_stylebox_override("focus", focused)
+    content.add_child(field)
+    return field
+
+func _multiplayer() -> void:
+    _clear()
+    page = "multiplayer"
+    heading.text = "MULTIPLAYER"
+    var help := Label.new()
+    help.text = "Host or join a room to start a new run."
+    help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    help.add_theme_color_override("font_color", Color("c5d0b5"))
+    content.add_child(help)
+    relay_field = _field("Relay server address", Game.menu_relay if not Game.menu_relay.is_empty() else DEFAULT_RELAY)
+    _button("HOST A GAME", _host, true)
+    room_field = _field("Six-character room code")
+    room_field.max_length = 6
+    _button("JOIN A GAME", _join)
+    status = Label.new()
+    status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    status.add_theme_color_override("font_color", Color("f3b0a3"))
+    content.add_child(status)
+    _button("BACK", _home)
+    relay_field.grab_focus()
+
+func _progress() -> void:
+    _clear()
+    page = "progress"
+    heading.text = "YOUR PROGRESS"
+    var badges := Label.new()
+    badges.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    badges.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    var names := PackedStringArray()
+    for key in Game.achievements:
+        names.append(str(key).replace("_", " ").capitalize())
+    badges.text = "Achievements: " + (", ".join(names) if not names.is_empty() else "None yet")
+    content.add_child(badges)
+    var scores := Label.new()
+    scores.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    var lines := PackedStringArray()
+    for record in Game.records:
+        lines.append("%d  ·  %s" % [record["score"], record["ending"]])
+    scores.text = "TOP SCORES\\n" + ("\\n".join(lines) if not lines.is_empty() else "No completed runs yet")
+    content.add_child(scores)
+    _button("BACK", _home).grab_focus()
+
+func _host() -> void:
+    _connect_room("host")
+
+func _join() -> void:
+    var code := room_field.text.strip_edges().to_upper()
+    if code.length() != 6 or not code.is_valid_hex_number():
+        status.text = "Enter the six-character room code."
+        return
+    _connect_room("join", code)
+
+func _connect_room(role: String, code: String = "") -> void:
+    var address := relay_field.text.strip_edges()
+    if not (address.begins_with("ws://") or address.begins_with("wss://")):
+        status.text = "Enter a ws:// or wss:// relay address."
+        return
+    Game.menu_role = role
+    Game.menu_room = code
+    Game.menu_relay = address
+    get_tree().paused = false
+    get_tree().change_scene_to_file("res://scenes/Main.tscn")
+
+func _unhandled_input(event: InputEvent) -> void:
+    if visible and event.is_action_pressed("ui_cancel"):
+        get_viewport().set_input_as_handled()
+        if page != "home":
+            _home()
+        elif is_game:
+            _resume()`},
       {name:'scripts/Main.gd',code:`extends Node2D
 
 const GamepadBindings = preload("res://scripts/GamepadBindings.gd")
@@ -861,6 +1116,7 @@ var game_over := false
 var p1_pad := -2
 var p2_pad := -2
 var system_pad := -2
+var notice_tween: Tween
 
 func _ready() -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS
@@ -878,9 +1134,11 @@ func _ready() -> void:
     _assign_gamepads()
     finale.hide()
     _setup_finale()
+    _setup_hud()
+    _connect_menu_room()
     $UI/HUD/ShopPanel.hide()
     exit_area.body_entered.connect(_on_exit)
-    $UI/HUD/ControlsButton.pressed.connect(controls_menu.open_menu)
+    $UI/HUD/ControlsButton.pressed.connect($UI/AdventureMenu.open_menu)
     $UI/HUD/Volume.min_value = 0.0
     $UI/HUD/Volume.max_value = 1.0
     $UI/HUD/Volume.step = 0.05
@@ -894,14 +1152,14 @@ func _ready() -> void:
     $UI/HUD/ShopPanel/BuyButton.pressed.connect(func(): _trade("buy"))
     $UI/HUD/ShopPanel/SellButton.pressed.connect(func(): _trade("sell"))
     $UI/HUD/ShopPanel/SalvageButton.pressed.connect(func(): _trade("salvage"))
-    $UI/HUD/Story.text = "The forest relic is missing. Find it beyond the guardian."
+    $UI/HUD/Story.hide()
 
 func _process(_delta: float) -> void:
     _assign_gamepads()
-    if controls_menu.visible:
+    if controls_menu.visible or $UI/AdventureMenu.visible:
         return
-    if Input.is_action_just_pressed("pause"):
-        controls_menu.open_menu()
+    if Input.is_action_just_pressed("pause") and not get_viewport().is_input_handled():
+        $UI/AdventureMenu.open_menu()
         return
     if get_tree().paused:
         return
@@ -947,18 +1205,89 @@ func _assign_gamepads() -> void:
         GamepadBindings.bind_system(first)
         system_pad = first
 
+func _setup_hud() -> void:
+    for node_name in ["Backdrop", "Hint", "Achievements", "Leaderboard", "HostButton", "JoinButton", "RoomCode", "Volume"]:
+        get_node("UI/HUD/" + node_name).hide()
+    var hud := $UI/HUD
+    var plate := Panel.new()
+    plate.name = "StatsPlate"
+    plate.position = Vector2(16, 14)
+    plate.size = Vector2(575, 50)
+    plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    plate.add_theme_stylebox_override("panel", _finale_box(Color("142b23"), Color("8f8652"), 1, 14))
+    hud.add_child(plate)
+    hud.move_child(plate, 0)
+    var stats: Label = $UI/HUD/Stats
+    stats.position = Vector2(32, 22)
+    stats.size = Vector2(410, 32)
+    stats.add_theme_font_size_override("font_size", 17)
+    stats.add_theme_color_override("font_color", Color("f4d98b"))
+    $UI/HUD/Player1HealthLabel.position = Vector2(405, 26)
+    $UI/HUD/Player1Health.position = Vector2(438, 29)
+    $UI/HUD/Player1Health.size = Vector2(95, 15)
+    var coop_plate := Panel.new()
+    coop_plate.name = "Player2Plate"
+    coop_plate.position = Vector2(582, 14)
+    coop_plate.size = Vector2(166, 50)
+    coop_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    coop_plate.add_theme_stylebox_override("panel", _finale_box(Color("142b23"), Color("8f8652"), 1, 14))
+    hud.add_child(coop_plate)
+    hud.move_child(coop_plate, 0)
+    for bar in [$UI/HUD/Player1Health, $UI/HUD/Player2Health]:
+        bar.add_theme_stylebox_override("background", _finale_box(Color("3a3431"), Color("8f8652"), 1, 7))
+        bar.add_theme_stylebox_override("fill", _finale_box(Color("e88985"), Color("e88985"), 0, 7))
+    $UI/HUD/Player2HealthLabel.position = Vector2(595, 26)
+    $UI/HUD/Player2Health.position = Vector2(628, 29)
+    $UI/HUD/Player2Health.size = Vector2(95, 15)
+    var menu_button: Button = $UI/HUD/ControlsButton
+    menu_button.text = "MENU"
+    menu_button.position = Vector2(1120, 16)
+    menu_button.size = Vector2(140, 46)
+    menu_button.add_theme_font_size_override("font_size", 16)
+    menu_button.add_theme_stylebox_override("normal", _finale_box(Color("203b30"), Color("8f8652"), 1, 10))
+    menu_button.add_theme_stylebox_override("hover", _finale_box(Color("315a44"), Color("f7e3a0"), 2, 10))
+    var room := Label.new()
+    room.name = "RoomStatus"
+    room.position = Vector2(32, 73)
+    room.size = Vector2(650, 28)
+    room.add_theme_font_size_override("font_size", 16)
+    room.add_theme_color_override("font_color", Color("f4d98b"))
+    hud.add_child(room)
+    var notice: Label = $UI/HUD/Story
+    notice.position = Vector2(260, 650)
+    notice.size = Vector2(760, 45)
+    notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    notice.add_theme_font_size_override("font_size", 20)
+
+func _connect_menu_room() -> void:
+    if Game.menu_role.is_empty():
+        return
+    online.relay_url = Game.menu_relay
+    if Game.menu_role == "host":
+        online.host_room()
+    else:
+        online.join_room(Game.menu_room)
+    Game.menu_role = ""
+
+func _notify(message: String) -> void:
+    var notice: Label = $UI/HUD/Story
+    if notice_tween and notice_tween.is_running():
+        notice_tween.kill()
+    notice.text = message
+    notice.modulate.a = 1.0
+    notice.show()
+    notice_tween = create_tween()
+    notice_tween.tween_interval(3.0)
+    notice_tween.tween_property(notice, "modulate:a", 0.0, 0.6)
+
 func _update_hud() -> void:
-    $UI/HUD/Stats.text = "Coins %d / 20  Wallet %d  Score %d  Materials %d  Blade %s" % [Game.collected, Game.coins, Game.score, Game.materials, "yes" if Game.attack_bonus > 0 else "no"]
+    $UI/HUD/Stats.text = "COINS  %d      SCORE  %d" % [Game.coins, Game.score]
     $UI/HUD/Player1Health.value = p1.health
     $UI/HUD/Player2Health.value = p2.health
     $UI/HUD/Player2Health.visible = p2.active
     $UI/HUD/Player2HealthLabel.visible = p2.active
-    $UI/HUD/Hint.text = "Press jump twice for a double jump. Controls: change keys or gamepad. Boss: %s  Room: %s" % ["done" if Game.boss_defeated else "alive", online.code]
-    $UI/HUD/Achievements.text = "Badges: " + ", ".join(Game.achievements.keys())
-    var lines := []
-    for record in Game.records:
-        lines.append("%d (%s)" % [record["score"], record["ending"]])
-    $UI/HUD/Leaderboard.text = "Top runs: " + ", ".join(lines)
+    $UI/HUD/Player2Plate.visible = p2.active
+    $UI/HUD/RoomStatus.text = online.connection_status
 
 func _shop_player():
     for body in shop.get_overlapping_bodies():
@@ -979,7 +1308,7 @@ func _trade(action: String, player = null) -> void:
         "buy": success = Game.buy_gear()
         "sell": success = Game.sell_gear()
         "salvage": success = Game.salvage_gear()
-    $UI/HUD/Story.text = "%s %s. Gear: %s. Materials: %d" % [action.capitalize(), "complete" if success else "unavailable", ", ".join(Game.inventory), Game.materials]
+    _notify("%s %s. Gear: %s. Materials: %d" % [action.capitalize(), "complete" if success else "unavailable", ", ".join(Game.inventory), Game.materials])
 
 # Set up a consistent full-screen result overlay for victory and defeat.
 func _setup_finale() -> void:
@@ -1049,10 +1378,7 @@ func _finale_box(fill: Color, border: Color, border_width: int, radius: int) -> 
     return box
 
 func _on_exit(body) -> void:
-    if finished or not body.is_in_group("heroes") or not body.active:
-        return
-    if Game.collected < 20 or not Game.boss_defeated:
-        $UI/HUD/Story.text = "The exit needs 20 coins and the defeated guardian."
+    if finished or not body.is_in_group("heroes") or not body.active or body.health <= 0:
         return
     finished = true
     p1.active = false
@@ -1074,7 +1400,7 @@ func _show_result(message: String, choices: bool, passed: bool = false) -> void:
         create_tween().tween_property(finale, "modulate:a", 1.0, 0.35)
     art.visible = passed
     $UI/Finale/DefeatIcon.visible = not passed and game_over
-    $UI/Finale/Score.text = "COINS  %d / 20       SCORE  %d" % [Game.collected, Game.score]
+    $UI/Finale/Score.text = "COINS  %d       SCORE  %d" % [Game.collected, Game.score]
     title.add_theme_color_override("font_color", Color("f4d98b") if passed else Color("f3b0a3"))
     title.text = "LEVEL PASSED!" if passed else ("GAME OVER" if game_over else "RESULT")
     title.show()
@@ -1110,7 +1436,7 @@ func _choose(choice: String) -> void:
     var result_label: Label = $UI/Finale/Result
     result_label.modulate.a = 0.0
     create_tween().tween_property(result_label, "modulate:a", 1.0, 1.0)
-    $UI/Finale/Score.text = "COINS  %d / 20       SCORE  %d" % [Game.collected, Game.score]
+    $UI/Finale/Score.text = "COINS  %d       SCORE  %d" % [Game.collected, Game.score]
     var roll: Label = $UI/Finale/Credits
     roll.text = "CREDITS\\nDesign: your name  ·  Art: credited lesson assets\\nBuilt with Godot"
     roll.modulate.a = 0.0
@@ -1126,20 +1452,22 @@ func _restart() -> void:
 
 var is_client := false
 var code := ""
+var relay_url := ""
+var connection_status := ""
 
 func host_room() -> void:
     pass
 
 func join_room(_room_code: String) -> void:
     pass`}],
-    check:'Open Controls or press the pause action. Change a keyboard key and a gamepad button or stick direction; verify conflicts are rejected, the choices still work after restarting, and Restore defaults works. Close the menu to resume. Join P2 and verify each assigned pad still uses the saved bindings.'
+    check:'Open the menu, choose Controls & Gamepad, and change a keyboard key and a gamepad button or stick direction; verify conflicts are rejected, the choices still work after restarting, and Restore defaults works. Close the menu to resume. Join P2 and verify each assigned pad still uses the saved bindings.'
   },
   {
     id:'ending',title:'7. Complete the story and ending',modules:'4 Storyline · 12 Ending cutscene · 13 Credits · 15 Achievements · 16 Leaderboard',
     summary:'The level needs a real finish condition, player choice, short cutscene, and credits—not just a boss that disappears.',
     steps:[
-      'Set a title and opening line in HUD/Story. Give the two enemy types and boss names using Label nodes or artwork. Replace the sample forest text in Main.gd with the story you wrote in Module 4.',
-      'At the exit, Main.gd checks that 20 coins were collected and the boss was defeated. Walk through it to show LEVEL PASSED and animate the generated victory crest with a Tween. Play Again starts a fresh run immediately. Keep and Return are optional ending decisions; choose one to save the ending and leaderboard record before replaying. Replace the sample Result text with your own outcome for each choice.',
+      'Give the two enemy types and boss names using Label nodes or artwork. Use the opening menu and your own art to establish the story you wrote in Module 4; short gameplay notices appear only when needed.',
+      'At the exit, any living active player can walk through the portal to show LEVEL PASSED and animate the generated victory crest with a Tween. Coins and enemy defeats are optional and do not block the exit. Play Again starts a fresh run immediately. Keep and Return are optional ending decisions; choose one to save the ending and leaderboard record before replaying. Replace the sample Result text with your own outcome for each choice.',
       'Main.gd fades in the result and the Credits label with Tweens. Fill Credits with the people and asset sources for your game, then add an AnimationPlayer to animate the relic or camera if you want a richer cutscene.',
       'Finish once with each choice. Confirm coin_collector, boss_breaker, first_purchase, and finished_game appear in Game.achievements, and that the next run shows a leaderboard record.'
     ],
@@ -1150,7 +1478,7 @@ func join_room(_room_code: String) -> void:
     summary:'Use the same map and P2 controls. The host runs collisions and rewards; a guest sends P2 input and sees snapshots. The Final Game relay is on this site.',
     steps:[
       'Clear the temporary contents of scripts/Online.gd, then rebuild that same file through the writing tasks below. The shown relay_url uses this page’s WebSocket address; for a local HTTP page it uses 127.0.0.1 instead of localhost to avoid IPv6-only connection failures on some Godot setups. If this page uses localhost, replace it with the public site’s WebSocket URL before running Godot in a cloud workspace; localhost inside the cloud editor points to that server, not your Mac.',
-      'Open two independent Godot workspaces or two running copies of the project. Host in one copy; read its six-character room code from the HUD. Enter that code in the second copy and press Join.',
+      'Open two independent Godot workspaces or two running copies of the project. Choose Multiplayer in the menu and use the same reachable relay address on both. Host in one copy and read its six-character room code in the HUD; enter that code on the second copy and choose Join. The default 127.0.0.1 address works only when the relay and game run on the same computer.',
       'On the guest copy, use P1 keyboard controls or the first connected gamepad to control the host’s Player2. The host owns coins, timed item spawns, enemy drops, boss, shop, score, and ending state. The guest receives snapshots of the world; leaderboard records and achievements save in the host’s workspace.',
       'Test a coin pickup, one enemy hit, a purchase, the boss defeat, and the exit while both copies are connected. Use a fresh code after a host disconnects.'
     ],
@@ -1167,6 +1495,7 @@ var sent := false
 var tick := 0.0
 var last_ending := ""
 var last_splash := false
+var connection_status := ""
 @onready var level = get_parent()
 
 func host_room() -> void:
@@ -1181,12 +1510,22 @@ func _connect(role: String, room_code: String) -> void:
     socket = WebSocketPeer.new()
     pending = role
     join_code = room_code
+    code = ""
+    is_host = false
+    is_client = false
     sent = false
-    socket.connect_to_url(relay_url)
+    connection_status = "Connecting…"
+    var error := socket.connect_to_url(relay_url)
+    if error != OK:
+        connection_status = "Could not connect to the relay."
+        pending = ""
 
 func _process(delta: float) -> void:
     socket.poll()
     if socket.get_ready_state() != WebSocketPeer.STATE_OPEN:
+        if socket.get_ready_state() == WebSocketPeer.STATE_CLOSED and not pending.is_empty():
+            connection_status = "Connection closed. Check the relay or room."
+            pending = ""
         return
     if not sent:
         _send({"type": pending, "code": join_code})
@@ -1263,6 +1602,7 @@ func _receive(message: Dictionary) -> void:
     match message.get("type", ""):
         "joined":
             code = str(message.get("code", ""))
+            connection_status = "ROOM  " + code
             is_host = pending == "host"
             is_client = pending == "join"
             if is_client:
@@ -1279,6 +1619,10 @@ func _receive(message: Dictionary) -> void:
                         area.monitoring = false
                 level.shop.monitoring = false
                 level.exit_area.monitoring = false
+        "error":
+            connection_status = str(message.get("message", "Could not join the room."))
+            pending = ""
+            socket.close()
         "peer_joined":
             level.p2.active = true
             level.p2.show()
@@ -1397,8 +1741,9 @@ func _sync_actor(actor, data: Dictionary) -> void:
     id:'test',title:'9. Playtest, polish, and submit',modules:'1–18 integrated',
     summary:'Complete the game as a player would, then keep a copy of the finished Godot project.',
     steps:[
-      'Run from the opening story/start area to the exit without using the editor. Test solo first, then local co-op, then an online room with two running project copies.',
-      'Check that all 20 coins are reachable, both enemy types can be beaten, the shop actually spends coins, the boss has two phases, and the exit cannot open early.',
+      'Run from the opening menu to the exit without using the editor. Try Start Adventure, Multiplayer, Controls & Gamepad, and Quit; test solo first, then local co-op and an online room with two running project copies.',
+      'For a desktop game that opens full screen, set Project → Project Settings → Display → Window → Size → Mode to Fullscreen. Keep the 1280 × 720 viewport and canvas_items stretch mode so the game retains its proportions. During editing or in a cloud workspace, you can switch Mode back to Windowed; set Fullscreen again before exporting if you want it at launch.',
+      'Check that coins are reachable, both enemy types can be beaten, the shop spends coins, and the boss has two phases. Verify that a living player can finish immediately by reaching the portal, even without coins or enemy defeats.',
       'Test monster contact damage, the health bars, hurt and death animations, game-over and Play Again, the controls menu, pause and volume, the victory animation and immediate replay, both ending choices, credits, achievements, and leaderboard persistence after restarting.',
       'Replace placeholder text and art with your own finished assets. Credit any shared lesson art. Back up your local project folder, or download the current project ZIP before deleting a cloud workspace. Open the backup once to confirm it contains Main.tscn and your scripts.'
     ],

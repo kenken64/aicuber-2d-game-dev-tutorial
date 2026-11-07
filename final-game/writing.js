@@ -12,7 +12,7 @@
     'scripts/Water.gd': 'Try a different linear_damp value and compare how quickly the boulder slows after touching the water.',
     'scripts/Splash.gd': 'Change one tween duration. Run the scene and describe whether the splash now appears or disappears more slowly.',
     'scripts/Enemy.gd': 'Give the two ordinary enemies different patrol limits in the Inspector. Watch each one reverse at its own boundary.',
-    'scripts/Main.gd': 'Rewrite the opening Story label for your own game. Run Main and confirm the HUD displays your sentence.',
+    'scripts/Main.gd': 'Change the colors of the HUD or the text on a menu button, then run the game and verify your change.',
     'scripts/Online.gd': 'Host a room and join from a second workspace. Move the guest, then explain why only the host decides coin collection and damage.'
   };
   const introduction = {

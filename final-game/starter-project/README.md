@@ -21,3 +21,7 @@ Press jump twice before landing to double jump. The Player.gd example exposes `m
 The starter also includes `forest-spikes.png` and `forest-pool-cutaway.png`. Fit a hazard Area2D to the spikes. For a recessed pool, split the terrain collision around the water, add a shallow pool-bottom collision and soil below, and place the boulder above it. Put at least three hearts in safe positions; the reference Pickup script leaves hearts available until a living player needs healing.
 
 In Section 6, add the backdrop, panel, victory art, labels and buttons under Finale as listed in the guide; Main.gd lays out and styles the result screen. Assign `assets/final-game/victory-crest.png` to `VictoryArt`. Section 7 animates the generated crest and title on victory; Play Again immediately starts a fresh run. Choosing Keep or Return saves the ending and leaderboard record before replay.
+
+For the finished desktop game, Section 9 explains how to set Project Settings → Display → Window → Size → Mode to Fullscreen before exporting. The starter opens windowed so its welcome scene remains convenient to use in the editor or cloud workspace.
+
+The reference code also includes AdventureMenu.gd and a StartMenu.tscn example. Section 6 explains how to add the same menu to Main and create the launch scene. Multiplayer needs a relay reachable by both players. A living active player finishes the level by reaching the portal; collecting coins and defeating enemies are optional.

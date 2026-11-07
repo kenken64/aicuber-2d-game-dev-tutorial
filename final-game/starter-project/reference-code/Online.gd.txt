@@ -11,6 +11,7 @@ var sent := false
 var tick := 0.0
 var last_ending := ""
 var last_splash := false
+var connection_status := ""
 @onready var level = get_parent()
 
 func host_room() -> void:
@@ -25,12 +26,22 @@ func _connect(role: String, room_code: String) -> void:
     socket = WebSocketPeer.new()
     pending = role
     join_code = room_code
+    code = ""
+    is_host = false
+    is_client = false
     sent = false
-    socket.connect_to_url(relay_url)
+    connection_status = "Connecting…"
+    var error := socket.connect_to_url(relay_url)
+    if error != OK:
+        connection_status = "Could not connect to the relay."
+        pending = ""
 
 func _process(delta: float) -> void:
     socket.poll()
     if socket.get_ready_state() != WebSocketPeer.STATE_OPEN:
+        if socket.get_ready_state() == WebSocketPeer.STATE_CLOSED and not pending.is_empty():
+            connection_status = "Connection closed. Check the relay or room."
+            pending = ""
         return
     if not sent:
         _send({"type": pending, "code": join_code})
@@ -107,6 +118,7 @@ func _receive(message: Dictionary) -> void:
     match message.get("type", ""):
         "joined":
             code = str(message.get("code", ""))
+            connection_status = "ROOM  " + code
             is_host = pending == "host"
             is_client = pending == "join"
             if is_client:
@@ -123,6 +135,10 @@ func _receive(message: Dictionary) -> void:
                         area.monitoring = false
                 level.shop.monitoring = false
                 level.exit_area.monitoring = false
+        "error":
+            connection_status = str(message.get("message", "Could not join the room."))
+            pending = ""
+            socket.close()
         "peer_joined":
             level.p2.active = true
             level.p2.show()

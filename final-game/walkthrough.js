@@ -20,9 +20,9 @@ window.finalGameWalkthrough = {
       finish: 'Stores the ending choice, awards bonus score, sorts leaderboard records, and keeps the best five.',
       save_progress: 'Writes achievements and leaderboard records as JSON in Godot user storage.',
       coins: 'The spendable wallet balance. Shop actions reduce it.',
-      collected: 'The total coins collected in this level. The exit requires at least 20, even after coins are spent.',
+      collected: 'The total coins collected in this run, including coins already spent; 20 earns an optional achievement.',
       score: 'Points earned from coins, enemies, and finishing the level.',
-      boss_defeated: 'Becomes true when the boss dies; the exit checks it before showing the finale.',
+      boss_defeated: 'Becomes true when the boss dies; it records boss progress and the associated achievement.',
       inventory: 'The gear the player currently owns, including the Forest Blade.',
       attack_bonus: 'Extra damage added to the player attack while the Forest Blade is owned.',
       achievements: 'Persistent badges loaded from and saved to user://final_save.json.',
@@ -182,19 +182,19 @@ window.finalGameWalkthrough = {
   'scripts/Main.gd': {
     flow: [
       '_ready configures the level, HUD buttons, the shop and exit, and controller assignments.',
-      '_process opens the paused controls menu, handles restart, local co-op, shop healing, and game-over checks, then refreshes the HUD.',
+      '_process opens the pause menu, handles restart, local co-op, shop healing, and game-over checks, then refreshes the compact HUD.',
       'The HUD health bars follow each player. On defeat Main waits briefly for the death animation before showing game over.',
-      'The exit requires 20 collected coins and a defeated boss. It opens the ending choice; _choose saves the result and animates the credits.'
+      'Any living active player can enter the exit to open the ending choice; collecting coins and defeating enemies are optional. _choose saves the result and animates the credits.'
     ],
     symbols: {
       _ready: 'Wires scene nodes, UI buttons, shop and exit signals, and initial gamepad assignments.',
       _process: 'Checks input and game state every rendered frame, including pause, co-op join, shopping, and game over.',
       _on_joy_connection_changed: 'Refreshes input assignments when a controller connects or disconnects.',
       _assign_gamepads: 'In solo, pad one controls P1. In local co-op, pad one controls P2 and pad two can control P1.',
-      _update_hud: 'Writes coins, score, health, badges, leaderboard, boss state, and room code to UI labels.',
+      _update_hud: 'Displays coins, score, active player health, and online room status.',
       _shop_player: 'Finds an active hero currently overlapping the shop area.',
       _trade: 'Routes buy, sell, and salvage buttons to Game, or sends the request to the host for an online guest.',
-      _on_exit: 'Allows the finale only after 20 coins were collected and the boss was defeated.',
+      _on_exit: 'Starts the finale as soon as a living active player reaches the portal.',
       _show_result: 'Displays the finale panel and shows or hides the ending choice buttons.',
       _choose: 'Commits Keep or Return to Game and animates the result and credits.',
       _volume_changed: 'Turns the slider value into a decibel level on Godot’s main audio bus.',

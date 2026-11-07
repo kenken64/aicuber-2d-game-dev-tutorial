@@ -9,7 +9,7 @@ window.finalGameFunctionDetails = {
     ],
     start_run: [
       ['coins = 0', 'Reset spendable coins for this attempt.'],
-      ['collected = 0', 'Reset the separate lifetime coin count used by the exit, so buying gear cannot lower it.'],
+      ['collected = 0', 'Reset the separate total coin count for this run; spending coins does not lower it.'],
       ['inventory.clear()', 'Remove equipment from the previous attempt; the remaining assignments reset combat and level state.']
     ],
     next_pickup_name: [
@@ -20,7 +20,7 @@ window.finalGameFunctionDetails = {
       ['coins += 1', 'Add currency that the shop may spend.'],
       ['collected += 1', 'Track total coins found, independently of the wallet balance.'],
       ['score += 10', 'Award points for the pickup.'],
-      ['if collected >= 20:', 'Unlock the collector badge once the level goal is met. unlock() prevents duplicates.']
+      ['if collected >= 20:', 'Unlock the optional collector badge after 20 coins. unlock() prevents duplicates.']
     ],
     buy_heal: [
       ['if coins < 5 or player.health >= 3:', 'Reject the purchase if it is unaffordable or the hero already has full health.'],
@@ -214,6 +214,27 @@ window.finalGameFunctionDetails = {
       ['queue_free()', 'Remove the defeated enemy from the scene.']
     ]
   },
+  'scripts/AdventureMenu.gd': {
+    _ready: [["process_mode = Node.PROCESS_MODE_ALWAYS", "Build the menu and show it at startup or hide it until gameplay is paused."]],
+    _box: [["var style := StyleBoxFlat.new()", "Create a reusable rounded forest-themed style."]],
+    _build: [["if not is_game:", "Create the backdrop, card, title and menu content."]],
+    _clear: [["for child in content.get_children():", "Remove the previous page before displaying another menu page."]],
+    _button: [["var button := Button.new()", "Create a styled, focusable button and connect its action."]],
+    _home: [["_clear()", "Show the play, multiplayer, controls and quit actions."]],
+    open_menu: [["get_tree().paused = true", "Pause the running level and show the menu."]],
+    _resume: [["hide()", "Hide the menu and resume gameplay."]],
+    _controls: [["var controls = level.get_node(\"UI/ControlsMenu\")", "Open the shared keyboard and gamepad settings."]],
+    _return_from_controls: [["show()", "Return from controls to the menu page."]],
+    _quit: [["get_tree().paused = false", "Quit the game."]],
+    _start_solo: [["Game.menu_role = \"\"", "Start a new solo level."]],
+    _field: [["var field := LineEdit.new()", "Create a styled text field for room or relay details."]],
+    _multiplayer: [["_clear()", "Show host and join options for a new run."]],
+    _progress: [["heading.text = \"YOUR PROGRESS\"", "Show saved achievements and leaderboard scores."]],
+    _host: [["_connect_room(\"host\")", "Start hosting on the chosen relay."]],
+    _join: [["var code := room_field.text.strip_edges().to_upper()", "Validate the six-character room code before joining."]],
+    _connect_room: [["var address := relay_field.text.strip_edges()", "Save the selected relay and role, then start a new level."]],
+    _unhandled_input: [["if visible and event.is_action_pressed(\"ui_cancel\"):", "Use the cancel action to go back or resume."]]
+  },
   'scripts/Main.gd': {
     _ready: [
       ['process_mode = Node.PROCESS_MODE_ALWAYS', 'Keep Main and the UI responsive while the scene tree is paused.'],
@@ -225,7 +246,7 @@ window.finalGameFunctionDetails = {
     ],
     _process: [
       ['_assign_gamepads()', 'Refresh bindings if the active player arrangement changes.'],
-      ['if Input.is_action_just_pressed("pause"):', 'Open the controls menu and pause gameplay until it is closed.'],
+      ['if Input.is_action_just_pressed("pause") and not get_viewport().is_input_handled():', 'Open the pause menu until the player resumes.'],
       ['if online.is_client:', 'A guest displays snapshots but leaves authoritative shop and death decisions to the host.'],
       ['if Input.is_action_just_pressed("toggle_coop") and not p2.active:', 'Show local player two when the join action is pressed.'],
       ['$UI/HUD/ShopPanel.visible = _shop_player() != null', 'Show shop controls while an active hero overlaps the shop.'],
@@ -240,11 +261,10 @@ window.finalGameFunctionDetails = {
       ['var next_p2 := first if local_coop else -1', 'Give the first pad to local P2, or remove its pad binding otherwise.'],
       ['if next_p1 != p1_pad:', 'Rebind only when a device assignment changed, avoiding repeated Input Map edits.']
     ],
-    _update_hud: [
-      ['$UI/HUD/Stats.text =', 'Show progress, wallet, score, materials, gear, and each active player’s health.'],
-      ['$UI/HUD/Hint.text =', 'Show controls plus current boss and room status.'],
-      ['for record in Game.records:', 'Format each saved leaderboard entry, then join them into the Top runs label.']
-    ],
+    _setup_hud: [['var plate := Panel.new()', 'Create a compact forest-themed HUD and keep instructions out of the play area.']],
+    _connect_menu_room: [['online.relay_url = Game.menu_relay', 'Connect the chosen multiplayer role using the relay entered in the menu.']],
+    _notify: [['notice.text = message', 'Show short feedback, then fade it out.']],
+    _update_hud: [['$UI/HUD/Stats.text =', 'Update coins and score.'], ['$UI/HUD/RoomStatus.text = online.connection_status', 'Show the room code or connection problem when online.']],
     _shop_player: [
       ['for body in shop.get_overlapping_bodies():', 'Inspect every body currently touching the shop area.'],
       ['if body.is_in_group("heroes") and body.active:', 'Return the first active hero; return null if no eligible hero is there.']
@@ -254,7 +274,7 @@ window.finalGameFunctionDetails = {
       ['if player == null:', 'For a local button press, find the hero standing in the shop.'],
       ['if player == null or not shop.get_overlapping_bodies().has(player):', 'Reject purchases from outside the shop, including remote requests.'],
       ['match action:', 'Call the matching buy, sell, or salvage method in Game.gd.'],
-      ['$UI/HUD/Story.text =', 'Show whether the trade succeeded and the resulting gear and material count.']
+      ['_notify(', 'Show whether the trade succeeded and the resulting gear and material count.']
     ],
     _setup_finale: [
       ['finale.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)', 'Cover the screen with a dimmed backdrop and a centered result card.'],
@@ -263,8 +283,7 @@ window.finalGameFunctionDetails = {
     _place_finale_control: [['control.anchor_left = 0.5', 'Position each result control relative to the center of the viewport.']],
     _finale_box: [['box.set_corner_radius_all(radius)', 'Create reusable rounded panel and button styles.']],
     _on_exit: [
-      ['if finished or not body.is_in_group("heroes") or not body.active:', 'Ignore repeat entry, nonheroes, and inactive players.'],
-      ['if Game.collected < 20 or not Game.boss_defeated:', 'Keep the exit locked until both the coin goal and boss defeat are complete.'],
+      ['if finished or not body.is_in_group("heroes") or not body.active or body.health <= 0:', 'Only a living active player can finish; coins and enemy defeats are optional.'],
       ['finished = true', 'Stop gameplay and deactivate both heroes.'],
       ['_show_result("You found the relic. Keep it or return it?", true, true)', 'Open the final choice panel.']
     ],
