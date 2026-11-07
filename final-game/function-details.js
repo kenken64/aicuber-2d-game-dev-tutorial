@@ -256,6 +256,12 @@ window.finalGameFunctionDetails = {
       ['match action:', 'Call the matching buy, sell, or salvage method in Game.gd.'],
       ['$UI/HUD/Story.text =', 'Show whether the trade succeeded and the resulting gear and material count.']
     ],
+    _setup_finale: [
+      ['finale.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)', 'Cover the screen with a dimmed backdrop and a centered result card.'],
+      ['button.add_theme_stylebox_override("normal"', 'Style the replay and ending buttons with matching colors and rounded corners.']
+    ],
+    _place_finale_control: [['control.anchor_left = 0.5', 'Position each result control relative to the center of the viewport.']],
+    _finale_box: [['box.set_corner_radius_all(radius)', 'Create reusable rounded panel and button styles.']],
     _on_exit: [
       ['if finished or not body.is_in_group("heroes") or not body.active:', 'Ignore repeat entry, nonheroes, and inactive players.'],
       ['if Game.collected < 20 or not Game.boss_defeated:', 'Keep the exit locked until both the coin goal and boss defeat are complete.'],
@@ -273,7 +279,7 @@ window.finalGameFunctionDetails = {
       ['Game.finish(choice)', 'Record the selected ending, award points, and save the leaderboard.'],
       ['$UI/Finale/KeepButton.hide()', 'Remove the choice buttons once a decision is made.'],
       ['create_tween().tween_property(result_label, "modulate:a", 1.0, 1.0)', 'Fade the result text into view over one second.'],
-      ['create_tween().tween_property(roll, "position:y", -220.0, 9.0)', 'Scroll the credits upward over nine seconds.']
+      ['create_tween().tween_property(roll, "modulate:a", 1.0, 1.0)', 'Fade the credits into the card after the ending choice.']
     ],
     _volume_changed: [
       ['maxf(value, 0.001)', 'Keep the slider value above zero so the logarithmic conversion stays valid.'],

@@ -577,7 +577,7 @@ func hit(amount: int = 1) -> void:
     steps:[
       'Under UI add HUD (Control) with Stats, Hint, Story, Achievements, Leaderboard, Player1HealthLabel, Player2HealthLabel (Labels), Player1Health and Player2Health (ProgressBars), and Volume (HSlider). Set both health bars Min to 0, Max to 3, Value to 3 and hide Percentage. Main updates them from each player’s health. Add ShopPanel (Control) with BuyButton, SellButton, SalvageButton. Add ControlsButton, HostButton, JoinButton (Buttons) and RoomCode (LineEdit) for Section 8.',
       'Under UI add a Control named ControlsMenu and attach scripts/ControlsMenu.gd below. The script builds the rows and buttons when the game starts; keep the root hidden in the editor. Each row can remap one keyboard key or gamepad button/axis for P1, P2, or a shared action.',
-      'Under UI add Finale (Control) with VictoryArt (TextureRect), VictoryTitle, Result and Credits (Labels), and KeepButton, ReturnButton, RestartButton (Buttons). Assign assets/final-game/victory-crest.png to VictoryArt, set Expand Mode to Ignore Size and Stretch Mode to Keep Aspect Centered. Place the crest and title at the top, Result below the title, and the three buttons in a row below them. Name RestartButton’s text Play Again. Size Finale as a centered panel and enable Clip Contents; hide it by default. Main.gd sets UI to Always and gameplay branches to Pausable so Escape can resume a paused run.',
+      'Under UI add Finale (Control). Add these children in this drawing order: Backdrop (ColorRect), Background (Panel), VictoryArt (TextureRect), DefeatIcon, Eyebrow, VictoryTitle, Result, Score, Credits (Labels), then KeepButton, ReturnButton and RestartButton (Buttons). Assign assets/final-game/victory-crest.png to VictoryArt, set Expand Mode to Ignore Size and Stretch Mode to Keep Aspect Centered. Hide Finale by default. Main.gd sizes and styles the full-screen overlay, centers the result card, and sets UI to Always so Escape can resume a paused run.',
       'Attach Main.gd below to Main. Also attach the small Online.gd placeholder to Online; replace that file with the full version in Section 8. Shop and Exit each need a CollisionShape2D and Monitoring on. Enter Shop: F or gamepad Y buys a heart for five coins; the panel buys a Forest Blade for eight coins, sells it for four, or salvages it for one material at a two-coin fee.',
       'Press C or gamepad Back to activate Player2. The first pad switches to P2; P1 keeps the keyboard or uses a second pad. Both share coins and score, but each has three hearts. The player collision exceptions in Main.gd let P1 pass through the hidden P2 and keep both players from blocking each other.',
       'Drag the Volume slider while the game runs. The Controls button or pause action opens the paused controls menu; choose a binding, then press a key, controller button, or move a stick. Escape cancels capture; use Close / Resume or UI Cancel to return. Restore defaults resets bindings. Controls save to user://controls.cfg; records and achievements use user://final_save.json.'
@@ -877,7 +877,7 @@ func _ready() -> void:
     Input.joy_connection_changed.connect(_on_joy_connection_changed)
     _assign_gamepads()
     finale.hide()
-    finale.clip_contents = true
+    _setup_finale()
     $UI/HUD/ShopPanel.hide()
     exit_area.body_entered.connect(_on_exit)
     $UI/HUD/ControlsButton.pressed.connect(controls_menu.open_menu)
@@ -981,6 +981,73 @@ func _trade(action: String, player = null) -> void:
         "salvage": success = Game.salvage_gear()
     $UI/HUD/Story.text = "%s %s. Gear: %s. Materials: %d" % [action.capitalize(), "complete" if success else "unavailable", ", ".join(Game.inventory), Game.materials]
 
+# Set up a consistent full-screen result overlay for victory and defeat.
+func _setup_finale() -> void:
+    finale.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    finale.clip_contents = false
+    var backdrop: ColorRect = $UI/Finale/Backdrop
+    backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    backdrop.color = Color(0.015, 0.035, 0.03, 0.82)
+    var panel: Panel = $UI/Finale/Background
+    _place_finale_control(panel, Rect2(-310, -280, 620, 560))
+    panel.add_theme_stylebox_override("panel", _finale_box(Color("142b23"), Color("8f8652"), 2, 22))
+    _place_finale_control($UI/Finale/VictoryArt, Rect2(-88, -258, 176, 132))
+    _place_finale_control($UI/Finale/DefeatIcon, Rect2(-88, -252, 176, 126))
+    _place_finale_control($UI/Finale/Eyebrow, Rect2(-260, -126, 520, 25))
+    _place_finale_control($UI/Finale/VictoryTitle, Rect2(-270, -100, 540, 55))
+    _place_finale_control($UI/Finale/Result, Rect2(-245, -43, 490, 55))
+    _place_finale_control($UI/Finale/Score, Rect2(-245, 12, 490, 35))
+    _place_finale_control($UI/Finale/KeepButton, Rect2(-220, 63, 210, 47))
+    _place_finale_control($UI/Finale/ReturnButton, Rect2(10, 63, 210, 47))
+    _place_finale_control($UI/Finale/Credits, Rect2(-240, 52, 480, 76))
+    _place_finale_control($UI/Finale/RestartButton, Rect2(-155, 145, 310, 56))
+    for label in [$UI/Finale/DefeatIcon, $UI/Finale/Eyebrow, $UI/Finale/VictoryTitle, $UI/Finale/Result, $UI/Finale/Score, $UI/Finale/Credits]:
+        label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+        label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    $UI/Finale/DefeatIcon.text = "♥"
+    $UI/Finale/DefeatIcon.add_theme_font_size_override("font_size", 86)
+    $UI/Finale/DefeatIcon.add_theme_color_override("font_color", Color("e69b91"))
+    $UI/Finale/Eyebrow.text = "T H E   S L E E P I N G   G R O V E"
+    $UI/Finale/Eyebrow.add_theme_font_size_override("font_size", 13)
+    $UI/Finale/Eyebrow.add_theme_color_override("font_color", Color("b7c5ad"))
+    $UI/Finale/VictoryTitle.add_theme_font_size_override("font_size", 40)
+    $UI/Finale/Result.add_theme_font_size_override("font_size", 19)
+    $UI/Finale/Result.add_theme_color_override("font_color", Color("edf1df"))
+    $UI/Finale/Result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    $UI/Finale/Score.add_theme_font_size_override("font_size", 15)
+    $UI/Finale/Score.add_theme_color_override("font_color", Color("c5d0b5"))
+    $UI/Finale/Credits.add_theme_font_size_override("font_size", 14)
+    $UI/Finale/Credits.add_theme_color_override("font_color", Color("c5d0b5"))
+    for button in [$UI/Finale/KeepButton, $UI/Finale/ReturnButton, $UI/Finale/RestartButton]:
+        var primary: bool = button == $UI/Finale/RestartButton
+        button.add_theme_font_size_override("font_size", 18)
+        button.add_theme_color_override("font_color", Color("1a2c20") if primary else Color("edf1df"))
+        button.add_theme_color_override("font_hover_color", Color("1a2c20") if primary else Color.WHITE)
+        button.add_theme_stylebox_override("normal", _finale_box(Color("e5c86e") if primary else Color("203b30"), Color("e5c86e") if primary else Color("668671"), 1, 10))
+        button.add_theme_stylebox_override("hover", _finale_box(Color("f4dc8f") if primary else Color("315a44"), Color("f7e3a0"), 2, 10))
+        button.add_theme_stylebox_override("pressed", _finale_box(Color("c6a84f") if primary else Color("142b23"), Color("f7e3a0"), 2, 10))
+        button.add_theme_stylebox_override("focus", _finale_box(Color(0, 0, 0, 0), Color("fff1b4"), 2, 10))
+    $UI/Finale/RestartButton.text = "PLAY AGAIN"
+
+func _place_finale_control(control: Control, bounds: Rect2) -> void:
+    control.anchor_left = 0.5
+    control.anchor_top = 0.5
+    control.anchor_right = 0.5
+    control.anchor_bottom = 0.5
+    control.offset_left = bounds.position.x
+    control.offset_top = bounds.position.y
+    control.offset_right = bounds.end.x
+    control.offset_bottom = bounds.end.y
+
+func _finale_box(fill: Color, border: Color, border_width: int, radius: int) -> StyleBoxFlat:
+    var box := StyleBoxFlat.new()
+    box.bg_color = fill
+    box.border_color = border
+    box.set_border_width_all(border_width)
+    box.set_corner_radius_all(radius)
+    return box
+
 func _on_exit(body) -> void:
     if finished or not body.is_in_group("heroes") or not body.active:
         return
@@ -994,19 +1061,28 @@ func _on_exit(body) -> void:
 
 func _game_over_after_animation() -> void:
     await get_tree().create_timer(0.9).timeout
-    _show_result("Game over. Press Play Again to try again.", false)
+    _show_result("Your adventure is not over. Try again!", false)
 
 func _show_result(message: String, choices: bool, passed: bool = false) -> void:
     var art: TextureRect = $UI/Finale/VictoryArt
     var title: Label = $UI/Finale/VictoryTitle
     var already_celebrating := finale.visible and art.visible
+    var was_visible := finale.visible
     finale.show()
+    if not was_visible:
+        finale.modulate.a = 0.0
+        create_tween().tween_property(finale, "modulate:a", 1.0, 0.35)
     art.visible = passed
+    $UI/Finale/DefeatIcon.visible = not passed and game_over
+    $UI/Finale/Score.text = "COINS  %d / 20       SCORE  %d" % [Game.collected, Game.score]
+    title.add_theme_color_override("font_color", Color("f4d98b") if passed else Color("f3b0a3"))
     title.text = "LEVEL PASSED!" if passed else ("GAME OVER" if game_over else "RESULT")
     title.show()
     $UI/Finale/Result.text = message
     $UI/Finale/KeepButton.visible = choices
     $UI/Finale/ReturnButton.visible = choices
+    _place_finale_control($UI/Finale/RestartButton, Rect2(-155, 145 if choices else 82, 310, 56))
+    $UI/Finale/RestartButton.grab_focus()
     $UI/Finale/Credits.text = ""
     if passed and not already_celebrating:
         art.pivot_offset = art.size / 2.0
@@ -1034,10 +1110,11 @@ func _choose(choice: String) -> void:
     var result_label: Label = $UI/Finale/Result
     result_label.modulate.a = 0.0
     create_tween().tween_property(result_label, "modulate:a", 1.0, 1.0)
+    $UI/Finale/Score.text = "COINS  %d / 20       SCORE  %d" % [Game.collected, Game.score]
     var roll: Label = $UI/Finale/Credits
-    roll.text = "CREDITS\\nDesign: your name\\nArt: your own work and credited lesson assets\\nBuilt with Godot"
-    roll.position.y = 500.0
-    create_tween().tween_property(roll, "position:y", -220.0, 9.0)
+    roll.text = "CREDITS\\nDesign: your name  ·  Art: credited lesson assets\\nBuilt with Godot"
+    roll.modulate.a = 0.0
+    create_tween().tween_property(roll, "modulate:a", 1.0, 1.0)
 
 func _volume_changed(value: float) -> void:
     AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001)))
@@ -1063,7 +1140,7 @@ func join_room(_room_code: String) -> void:
     steps:[
       'Set a title and opening line in HUD/Story. Give the two enemy types and boss names using Label nodes or artwork. Replace the sample forest text in Main.gd with the story you wrote in Module 4.',
       'At the exit, Main.gd checks that 20 coins were collected and the boss was defeated. Walk through it to show LEVEL PASSED and animate the generated victory crest with a Tween. Play Again starts a fresh run immediately. Keep and Return are optional ending decisions; choose one to save the ending and leaderboard record before replaying. Replace the sample Result text with your own outcome for each choice.',
-      'Main.gd fades in the result and scrolls the Credits label with a Tween. Fill Credits with the people and asset sources for your game, then add an AnimationPlayer to animate the relic or camera if you want a richer cutscene.',
+      'Main.gd fades in the result and the Credits label with Tweens. Fill Credits with the people and asset sources for your game, then add an AnimationPlayer to animate the relic or camera if you want a richer cutscene.',
       'Finish once with each choice. Confirm coin_collector, boss_breaker, first_purchase, and finished_game appear in Game.achievements, and that the next run shows a leaderboard record.'
     ],
     check:'A complete run reaches an ending choice, shows a cutscene/credits, saves an achievement and score, and restarts cleanly.'
