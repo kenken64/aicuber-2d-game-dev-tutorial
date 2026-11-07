@@ -33,23 +33,45 @@ window.finalGameWalkthrough = {
     flow: [
       'Main chooses a connected controller device number for each local player.',
       'bind_player removes only old controller events, then maps that device’s stick, D-pad, and face buttons to the player actions. Keyboard bindings remain.',
-      'bind_system maps join, pause, and restart to the first controller. Main calls these methods again when a controller connects or the local player arrangement changes.'
+      'bind_system maps join, pause, and restart to the first controller. Saved overrides replace the default controller events, and Main reapplies them when a controller or player assignment changes.'
     ],
     symbols: {
       bind_player: 'Assigns one specific controller to P1 or P2. A device value of -1 removes that player’s controller bindings.',
       bind_system: 'Maps Back, Start, and right shoulder to join, pause, and restart.',
       _clear_pad_events: 'Erases only joypad bindings from an action, preserving the keyboard keys set in Project Settings.',
-      _axis: 'Creates a left-stick motion event for one direction and sets a 0.25 dead zone to ignore small drift.',
+      _axis: 'Creates a stick-motion event for one direction and sets a 0.25 dead zone to ignore small drift.',
       _button: 'Adds a button event for one controller device and one action.',
       slot: 'Player number: 1 selects p1_ actions and 2 selects p2_ actions.',
       device: 'Godot’s connected controller ID. It keeps one pad from moving both players.',
       prefix: 'The p1_ or p2_ prefix used to build the action names.'
     }
   },
+  'scripts/ControlsMenu.gd': {
+    flow: [
+      'The menu builds a row for each player and shared action, then loads any saved keyboard and gamepad mappings.',
+      'Opening it pauses gameplay. Selecting a row captures a key, button, or stick direction; conflicting assignments are rejected.',
+      'Valid choices are saved to user://controls.cfg and applied to the currently assigned controllers. Close or cancel to resume, or restore the defaults.'
+    ],
+    symbols: {
+      ACTIONS: 'Readable menu labels mapped to the Input Map action names.',
+      SAVE_PATH: 'The per-device file that stores the player’s controls.',
+      open_menu: 'Pauses the game and shows the controls menu.',
+      close_menu: 'Closes the menu and restores the previous pause state.',
+      _input: 'Captures and validates the next keyboard or controller input.',
+      _find_conflict: 'Finds an existing conflicting keyboard or controller assignment.',
+      _set_keyboard: 'Replaces the keyboard event while preserving controller events.',
+      _apply_gamepads: 'Reapplies custom bindings to the currently assigned gamepads.',
+      _save_settings: 'Stores bindings in user://controls.cfg.',
+      _load_settings: 'Restores previously saved keyboard and controller choices.',
+      _restore_defaults: 'Restores and saves the original bindings.'
+    }
+  },
   'scripts/Player.gd': {
     flow: [
       'Each physics tick reads this player’s action names. Online guests supply the same movement and button presses through remote_* values.',
       'The script applies gravity, movement, jump, roll, facing, and a short attack cooldown before move_and_slide resolves collisions.',
+      'Holding crouch changes the pose and the player’s own rectangular collision shape. The hero stays crouched beneath a low ceiling.',
+      'Damage plays hurt frames while health remains; zero health plays the non-looping death frames before the game-over panel appears.',
       'After movement it chooses an animation. hurt and heal change health when hazards, enemies, or pickups call them.'
     ],
     symbols: {
@@ -73,7 +95,7 @@ window.finalGameWalkthrough = {
   },
   'scripts/Pickup.gd': {
     flow: [
-      '_ready connects the Area2D body_entered signal to the pickup handler.',
+      '_ready chooses the coin or heart texture and connects the Area2D body_entered signal to the pickup handler.',
       'Only an active hero may collect it. A coin updates Game; a heart heals the hero and may unlock a badge.',
       'queue_free removes the pickup so it cannot be collected twice.'
     ],
@@ -81,6 +103,7 @@ window.finalGameWalkthrough = {
       _ready: 'Starts listening for a physics body entering the pickup area.',
       _on_body_entered: 'Checks the entering body, applies the coin or heart reward, and removes the pickup.',
       kind: 'Inspector setting that decides whether this instance is a coin or a heart.',
+      heart_texture: 'The heart image to show for health pickups; assign it on the reusable Pickup scene.',
       body: 'The physics body that entered the area; only active heroes receive a reward.'
     }
   },
@@ -158,7 +181,8 @@ window.finalGameWalkthrough = {
   'scripts/Main.gd': {
     flow: [
       '_ready configures the level, HUD buttons, the shop and exit, and controller assignments.',
-      '_process handles pause, restart, local co-op, shop healing, and game-over checks, then refreshes the HUD.',
+      '_process opens the paused controls menu, handles restart, local co-op, shop healing, and game-over checks, then refreshes the HUD.',
+      'The HUD health bars follow each player. On defeat Main waits briefly for the death animation before showing game over.',
       'The exit requires 20 collected coins and a defeated boss. It opens the ending choice; _choose saves the result and animates the credits.'
     ],
     symbols: {

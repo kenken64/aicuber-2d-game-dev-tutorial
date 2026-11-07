@@ -1,0 +1,9 @@
+# Final Game artwork
+
+The portal and shop images were generated for this starter kit with the built-in OpenAI image generation tool. They have transparent backgrounds for use as Godot Sprite2D textures.
+
+Portal prompt: “Use case: stylized-concept. Asset type: transparent 2D side-view platformer game sprite. Create one complete freestanding magical forest portal door, a tall ancient stone arch wrapped in vines with a luminous teal swirling doorway, clear open doorway silhouette and stone footing. Render as polished hand-painted fantasy game art compatible with a lush forest adventure. View straight on, full object, centered, feet at bottom, no scenery. Transparent background with actual alpha. No text, no characters, no watermark.”
+
+Shop prompt: “Use case: stylized-concept. Asset type: transparent 2D side-view platformer game sprite. Create one complete cozy fantasy forest merchant shop stand: freestanding wooden kiosk with cloth awning, small counter and a few potions and supplies, readable silhouette, full object and feet at bottom. Polished hand-painted fantasy game art compatible with a lush forest adventure. View straight on, centered. Transparent background with actual alpha. No characters, no text, no watermark.”
+
+Ground prompt: “Use case: stylized-concept. Asset type: seamless repeating 2D side-view platform game terrain tile. Create one square tile for a forest floor, viewed straight on: a thin continuous strip of lush green grass along the very top edge, with realistic dark earthy brown soil beneath it filling the entire rest of the square, fine roots, small pebbles and subtle organic detail. Art direction: polished hand-painted fantasy game art, consistent lighting. The left and right edges must tile seamlessly with one another. Full-bleed texture, no sky, no background, no characters, no interface, no words, no watermark.”

@@ -51,3 +51,9 @@ final-game/dist/
 
 # Local animation frames for the swimming lesson.
 !game-physics/swimmer-crawl-v2.webp
+
+# AI CUBER brand artwork.
+!tutorial-web-app/branding/aicuber-logo.png
+
+# Final Game starter-kit portal and shop artwork.
+!final-game/starter-project/assets/final-game/*.png

@@ -1,0 +1,176 @@
+extends Node2D
+
+const GamepadBindings = preload("res://scripts/GamepadBindings.gd")
+@onready var p1 = $Player1
+@onready var p2 = $Player2
+@onready var shop: Area2D = $Shop
+@onready var exit_area: Area2D = $Exit
+@onready var finale: Control = $UI/Finale
+@onready var online = $Online
+@onready var controls_menu = $UI/ControlsMenu
+var finished := false
+var game_over := false
+var p1_pad := -2
+var p2_pad := -2
+var system_pad := -2
+
+func _ready() -> void:
+    process_mode = Node.PROCESS_MODE_ALWAYS
+    $UI.process_mode = Node.PROCESS_MODE_ALWAYS
+    for branch in ["Pickups", "BonusPickups", "Spawner", "Hazards", "Water", "Boulder", "Enemies", "Boss", "Player1", "Player2", "Shop", "Exit", "Online"]:
+        get_node(branch).process_mode = Node.PROCESS_MODE_PAUSABLE
+    Game.start_run()
+    $BonusPickups.add_to_group("loot_container")
+    p2.active = false
+    p2.hide()
+    # The hidden second player must not block the first player.
+    p1.add_collision_exception_with(p2)
+    p2.add_collision_exception_with(p1)
+    Input.joy_connection_changed.connect(_on_joy_connection_changed)
+    _assign_gamepads()
+    finale.hide()
+    finale.clip_contents = true
+    $UI/HUD/ShopPanel.hide()
+    exit_area.body_entered.connect(_on_exit)
+    $UI/HUD/ControlsButton.pressed.connect(controls_menu.open_menu)
+    $UI/HUD/Volume.min_value = 0.0
+    $UI/HUD/Volume.max_value = 1.0
+    $UI/HUD/Volume.step = 0.05
+    $UI/HUD/Volume.value = 1.0
+    $UI/HUD/Volume.value_changed.connect(_volume_changed)
+    $UI/Finale/KeepButton.pressed.connect(func(): _choose("keep"))
+    $UI/Finale/ReturnButton.pressed.connect(func(): _choose("return"))
+    $UI/Finale/RestartButton.pressed.connect(_restart)
+    $UI/HUD/HostButton.pressed.connect(online.host_room)
+    $UI/HUD/JoinButton.pressed.connect(func(): online.join_room($UI/HUD/RoomCode.text))
+    $UI/HUD/ShopPanel/BuyButton.pressed.connect(func(): _trade("buy"))
+    $UI/HUD/ShopPanel/SellButton.pressed.connect(func(): _trade("sell"))
+    $UI/HUD/ShopPanel/SalvageButton.pressed.connect(func(): _trade("salvage"))
+    $UI/HUD/Story.text = "The forest relic is missing. Find it beyond the guardian."
+
+func _process(_delta: float) -> void:
+    _assign_gamepads()
+    if controls_menu.visible:
+        return
+    if Input.is_action_just_pressed("pause"):
+        controls_menu.open_menu()
+        return
+    if get_tree().paused:
+        return
+    if Input.is_action_just_pressed("restart"):
+        _restart()
+    if online.is_client:
+        _update_hud()
+        return
+    if Input.is_action_just_pressed("toggle_coop") and not p2.active:
+        p2.active = true
+        p2.show()
+        _assign_gamepads()
+    if not finished:
+        $UI/HUD/ShopPanel.visible = _shop_player() != null
+        for body in shop.get_overlapping_bodies():
+            if body == p1 and Input.is_action_just_pressed("p1_interact"):
+                Game.buy_heal(p1)
+            if body == p2 and p2.active and not p2.remote_controlled and Input.is_action_just_pressed("p2_interact"):
+                Game.buy_heal(p2)
+        if p1.health <= 0 and (not p2.active or p2.health <= 0):
+            finished = true
+            game_over = true
+            _game_over_after_animation()
+    _update_hud()
+
+func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+    _assign_gamepads()
+
+func _assign_gamepads() -> void:
+    var pads := Input.get_connected_joypads()
+    var first := pads[0] if pads.size() > 0 else -1
+    var second := pads[1] if pads.size() > 1 else -1
+    var local_coop: bool = p2.active and not p2.remote_controlled and not online.is_client
+    var next_p1 := second if local_coop else first
+    var next_p2 := first if local_coop else -1
+    if next_p1 != p1_pad:
+        GamepadBindings.bind_player(1, next_p1)
+        p1_pad = next_p1
+    if next_p2 != p2_pad:
+        GamepadBindings.bind_player(2, next_p2)
+        p2_pad = next_p2
+    if first != system_pad:
+        GamepadBindings.bind_system(first)
+        system_pad = first
+
+func _update_hud() -> void:
+    $UI/HUD/Stats.text = "Coins %d / 20  Wallet %d  Score %d  Materials %d  Blade %s" % [Game.collected, Game.coins, Game.score, Game.materials, "yes" if Game.attack_bonus > 0 else "no"]
+    $UI/HUD/Player1Health.value = p1.health
+    $UI/HUD/Player2Health.value = p2.health
+    $UI/HUD/Player2Health.visible = p2.active
+    $UI/HUD/Player2HealthLabel.visible = p2.active
+    $UI/HUD/Hint.text = "Use Controls to change keys or gamepad. Boss: %s  Room: %s" % ["done" if Game.boss_defeated else "alive", online.code]
+    $UI/HUD/Achievements.text = "Badges: " + ", ".join(Game.achievements.keys())
+    var lines := []
+    for record in Game.records:
+        lines.append("%d (%s)" % [record["score"], record["ending"]])
+    $UI/HUD/Leaderboard.text = "Top runs: " + ", ".join(lines)
+
+func _shop_player():
+    for body in shop.get_overlapping_bodies():
+        if body.is_in_group("heroes") and body.active:
+            return body
+    return null
+
+func _trade(action: String, player = null) -> void:
+    if online.is_client:
+        online.send_trade(action)
+        return
+    if player == null:
+        player = _shop_player()
+    if player == null or not shop.get_overlapping_bodies().has(player):
+        return
+    var success := false
+    match action:
+        "buy": success = Game.buy_gear()
+        "sell": success = Game.sell_gear()
+        "salvage": success = Game.salvage_gear()
+    $UI/HUD/Story.text = "%s %s. Gear: %s. Materials: %d" % [action.capitalize(), "complete" if success else "unavailable", ", ".join(Game.inventory), Game.materials]
+
+func _on_exit(body) -> void:
+    if finished or not body.is_in_group("heroes") or not body.active:
+        return
+    if Game.collected < 20 or not Game.boss_defeated:
+        $UI/HUD/Story.text = "The exit needs 20 coins and the defeated guardian."
+        return
+    finished = true
+    p1.active = false
+    p2.active = false
+    _show_result("You found the relic. Keep it or return it?", true)
+
+func _game_over_after_animation() -> void:
+    await get_tree().create_timer(0.9).timeout
+    _show_result("Game over. Press Restart to try again.", false)
+
+func _show_result(message: String, choices: bool) -> void:
+    finale.show()
+    $UI/Finale/Result.text = message
+    $UI/Finale/KeepButton.visible = choices
+    $UI/Finale/ReturnButton.visible = choices
+    $UI/Finale/Credits.text = ""
+
+func _choose(choice: String) -> void:
+    Game.finish(choice)
+    $UI/Finale/Result.text = "You chose to %s the relic. Final score: %d" % [choice, Game.score]
+    $UI/Finale/KeepButton.hide()
+    $UI/Finale/ReturnButton.hide()
+    var result_label: Label = $UI/Finale/Result
+    result_label.modulate.a = 0.0
+    create_tween().tween_property(result_label, "modulate:a", 1.0, 1.0)
+    var roll: Label = $UI/Finale/Credits
+    roll.text = "CREDITS\nDesign: your name\nArt: your own work and credited lesson assets\nBuilt with Godot"
+    roll.position.y = 500.0
+    create_tween().tween_property(roll, "position:y", -220.0, 9.0)
+
+func _volume_changed(value: float) -> void:
+    AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001)))
+
+func _restart() -> void:
+    get_tree().paused = false
+    get_tree().reload_current_scene()

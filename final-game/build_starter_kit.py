@@ -73,7 +73,16 @@ def build(output: Path, allow_download: bool) -> tuple[int, int]:
             for path in sorted(PROJECT.rglob("*")):
                 if path.is_file():
                     name = path.relative_to(PROJECT).as_posix()
-                    add_bytes(archive, name, path.read_bytes(), ZIP_DEFLATED)
+                    data = path.read_bytes()
+                    add_bytes(archive, name, data, ZIP_DEFLATED)
+                    if name.startswith("assets/final-game/"):
+                        catalog.append({
+                            "path": name,
+                            "module": "final-game",
+                            "sourceUrl": None,
+                            "sizeBytes": len(data),
+                            "sha256": hashlib.sha256(data).hexdigest(),
+                        })
             for item in items:
                 data = read_media(item, allow_download)
                 target = f"assets/{item['localPath']}"

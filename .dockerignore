@@ -20,3 +20,7 @@ final-game/dist
 
 !microbit-gamepad/images/joystick-bit-v2.png
 !game-physics/swimmer-crawl-v2.webp
+!tutorial-web-app/branding/aicuber-logo.png
+
+# Final Game starter-kit portal and shop artwork.
+!final-game/starter-project/assets/final-game/*.png

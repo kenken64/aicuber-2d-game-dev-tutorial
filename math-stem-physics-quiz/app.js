@@ -7,6 +7,7 @@ const copy = {
 };
 // The quiz is followed by Godot setup and the final build step.
 Object.assign(copy.en, {
+  answerSheet: 'DOWNLOAD ANSWER SHEET (PDF)', sheetTitle: 'Download answer sheet', sheetDescription: 'Enter the module reset passcode to download all answers and detailed explanations. You will need it again to open the PDF.', sheetPasscode: 'Reset passcode', sheetCancel: 'CANCEL', sheetDownload: 'DOWNLOAD PDF', sheetIncorrect: 'Incorrect passcode. Please try again.', sheetUnavailable: 'The reset passcode is not configured on the server. Contact the administrator.', sheetFailed: 'Could not download the answer sheet. Please try again.',
   chapter: 'CHAPTER 19 / KNOWLEDGE CHECK', finalQuiz: 'KNOWLEDGE CHECK',
   retry: 'START NEW ATTEMPT', retryConfirm: 'CONFIRM NEW ATTEMPT',
   retryWarning: 'Click again to clear every answer and your quiz pass status.', retrySuccess: 'New quiz attempt started.',
@@ -15,6 +16,7 @@ Object.assign(copy.en, {
   saved: (score, total) => `Quiz complete — ${score}/${total}. Learn Godot Web Editor is next.`,
 });
 Object.assign(copy.zh, {
+  answerSheet: '下载答案解析 (PDF)', sheetTitle: '下载答案解析', sheetDescription: '输入模块重置密码，下载全部答案及详细解析。打开 PDF 时需要再次输入密码。', sheetPasscode: '重置密码', sheetCancel: '取消', sheetDownload: '下载 PDF', sheetIncorrect: '密码不正确，请重试。', sheetUnavailable: '服务器尚未配置重置密码，请联系管理员。', sheetFailed: '无法下载答案解析，请重试。',
   chapter: '第 19 章 / 知识测验', finalQuiz: '知识测验',
   retry: '开始新一轮测验', retryConfirm: '确认重新开始',
   retryWarning: '再次点击将清除所有答案和测验通过状态。', retrySuccess: '已开始新一轮测验。',
@@ -23,6 +25,7 @@ Object.assign(copy.zh, {
   saved: (score, total) => `测验已完成 — ${score}/${total}。下一站是“学习 Godot 网页编辑器”。`,
 });
 Object.assign(copy.ms, {
+  answerSheet: 'MUAT TURUN JAWAPAN (PDF)', sheetTitle: 'Muat turun jawapan', sheetDescription: 'Masukkan kod laluan set semula modul untuk memuat turun semua jawapan dan penerangan terperinci. Gunakan kod yang sama untuk membuka PDF.', sheetPasscode: 'Kod laluan set semula', sheetCancel: 'BATAL', sheetDownload: 'MUAT TURUN PDF', sheetIncorrect: 'Kod laluan salah. Sila cuba lagi.', sheetUnavailable: 'Kod set semula belum dikonfigurasi pada pelayan. Hubungi pentadbir.', sheetFailed: 'Helaian jawapan tidak dapat dimuat turun. Sila cuba lagi.',
   chapter: 'BAB 19 / SEMAKAN PENGETAHUAN', finalQuiz: 'SEMAKAN PENGETAHUAN',
   retry: 'MULA CUBAAN BAHARU', retryConfirm: 'SAHKAN CUBAAN BAHARU',
   retryWarning: 'Klik sekali lagi untuk padam semua jawapan dan status lulus kuiz.', retrySuccess: 'Cubaan kuiz baharu bermula.',
@@ -33,6 +36,8 @@ Object.assign(copy.ms, {
 let currentLocale = copy[localStorage.getItem('godot-forge-locale')] ? localStorage.getItem('godot-forge-locale') : 'en';
 const quizList = document.querySelector("#quiz-list"), pageTabs = document.querySelector('#quiz-page-tabs'), previousPage = document.querySelector('#previous-page'), nextPage = document.querySelector('#next-page'), pageLabel = document.querySelector('#quiz-page-label'), scoreElement = document.querySelector("#score"), answeredElement = document.querySelector("#answered-count"), intro = document.querySelector("#quiz-intro"), result = document.querySelector("#quiz-result"), retry = document.querySelector("#retry"), complete = document.querySelector("#complete");
 const pageSize = 10;
+const sheetDialog = document.querySelector('#answer-sheet-dialog'), sheetForm = document.querySelector('#answer-sheet-form'), sheetPasscode = document.querySelector('#answer-sheet-passcode'), sheetError = document.querySelector('#answer-sheet-error'), sheetSubmit = document.querySelector('#answer-sheet-submit'), sheetCancel = document.querySelector('#answer-sheet-cancel');
+let sheetBusy = false;
 let questions = [], selected = [], score = 0, currentPage = 0;
 let quizCompleted = false, quizSaving = false;
 const checking = new Set();
@@ -62,6 +67,12 @@ function applyLocale() {
   nextPage.textContent = t.next;
   retry.textContent = retry.dataset.confirming === 'true' ? t.retryConfirm : t.retry;
   complete.textContent = quizCompleted ? t.completed : t.complete;
+  document.querySelector('#download-answer-sheet').textContent = t.answerSheet;
+  document.querySelector('#answer-sheet-title').textContent = t.sheetTitle;
+  document.querySelector('#answer-sheet-description').textContent = t.sheetDescription;
+  document.querySelector('#answer-sheet-label').textContent = t.sheetPasscode;
+  sheetCancel.textContent = t.sheetCancel;
+  sheetSubmit.textContent = t.sheetDownload;
   if (questions.length) intro.textContent = t.intro(questions.length, Math.ceil(questions.length * .75));
 }
 
@@ -119,7 +130,7 @@ function renderQuiz() {
     const card = document.createElement("article"), heading = document.createElement("h4"), number = document.createElement("span"), options = document.createElement("div"), answer = selected[index];
     card.className = "quiz-card"; number.textContent = currentLocale === 'zh' ? `第${index + 1}题` : currentLocale === 'ms' ? `S${String(index + 1).padStart(2, '0')}` : `Q${String(index + 1).padStart(2, "0")}`; heading.append(number, item.question); options.className = "quiz-options";
     item.options.forEach((label, optionIndex) => {
-      const button = document.createElement("button"); button.type = "button"; button.textContent = label;
+      const button = document.createElement("button"); button.type = "button"; button.textContent = `${String.fromCharCode(65 + optionIndex)}. ${label}`;
       if (answer || checking.has(index)) button.disabled = true;
       if (answer?.correctOption === optionIndex) button.classList.add("correct");
       else if (answer && answer.option === optionIndex) button.classList.add("incorrect");
@@ -225,6 +236,34 @@ retry.addEventListener("click", async () => {
   finally { retry.disabled = false; retry.dataset.confirming = 'false'; retry.textContent = copy[currentLocale].retry; }
 });
 complete.addEventListener("click", completeModule);
+document.querySelector('#download-answer-sheet').addEventListener('click', () => {
+  sheetPasscode.value = ''; sheetError.textContent = '';
+  sheetDialog.showModal(); sheetPasscode.focus();
+});
+sheetCancel.addEventListener('click', () => sheetDialog.close());
+sheetDialog.addEventListener('cancel', event => { if (sheetBusy) event.preventDefault(); });
+sheetDialog.addEventListener('close', () => { sheetPasscode.value = ''; sheetError.textContent = ''; });
+sheetForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (sheetBusy || !sheetPasscode.value) return;
+  sheetBusy = true; sheetSubmit.disabled = true; sheetCancel.disabled = true; sheetPasscode.disabled = true; sheetError.textContent = '';
+  try {
+    const response = await fetch(`/api/quizzes/${moduleSlug}/answer-sheet`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ passcode: sheetPasscode.value, locale: currentLocale }),
+    });
+    if (!response.ok) throw new Error(response.status === 403 ? copy[currentLocale].sheetIncorrect : response.status === 503 ? copy[currentLocale].sheetUnavailable : copy[currentLocale].sheetFailed);
+    const blob = await response.blob();
+    if (blob.type !== 'application/pdf') throw new Error(copy[currentLocale].sheetFailed);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = `godot-forge-quiz-answers-${currentLocale}.pdf`; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    sheetPasscode.value = '';
+    sheetError.textContent = '';
+    sheetDialog.close();
+  } catch (error) { sheetError.textContent = error.message || copy[currentLocale].sheetFailed; }
+  finally { sheetBusy = false; sheetSubmit.disabled = false; sheetCancel.disabled = false; sheetPasscode.disabled = false; if (sheetDialog.open) { sheetPasscode.focus(); sheetPasscode.select(); } }
+});
 applyLocale();
 renderQuiz();
 loadQuestions();

@@ -104,6 +104,15 @@
           <p id="empty-state" class="empty-state" data-i18n="emptyState" hidden>No modules match that search.</p>
         </section>
 
+        <section class="certificate-panel" aria-labelledby="certificate-heading">
+          <div>
+            <p class="eyebrow" data-i18n="certificateEyebrow">YOUR ACHIEVEMENT</p>
+            <h2 id="certificate-heading" data-i18n="certificateTitle">Certificate of completion</h2>
+            <p id="certificate-status" aria-live="polite">Complete all 22 modules to unlock your certificate, including the bonus module.</p>
+          </div>
+          <button id="certificate-open" class="certificate-button" type="button" disabled data-i18n="certificateButton">DOWNLOAD CERTIFICATE</button>
+        </section>
+
         <section class="bottom-panel">
           <div>
             <p class="eyebrow" data-i18n="buildPhilosophy">Build philosophy</p>
@@ -124,6 +133,22 @@
         </footer>
       </main>
     </div>
+
+    <dialog id="certificate-dialog" aria-labelledby="certificate-dialog-title" aria-describedby="certificate-dialog-description">
+      <h2 id="certificate-dialog-title">Instructor approval</h2>
+      <p id="certificate-dialog-description">Ask your instructor to enter the module reset passcode.</p>
+      <form id="certificate-authorize-form">
+        <label id="certificate-passcode-label" for="certificate-passcode">Instructor passcode</label>
+        <input id="certificate-passcode" type="password" autocomplete="off" maxlength="128" required />
+        <div class="certificate-dialog-actions"><button class="certificate-cancel" type="button">CANCEL</button><button id="certificate-authorize" type="submit">CONTINUE</button></div>
+      </form>
+      <form id="certificate-name-form" hidden>
+        <label id="certificate-name-label" for="certificate-name">Student name</label>
+        <input id="certificate-name" type="text" autocomplete="name" maxlength="80" required />
+        <div class="certificate-dialog-actions"><button class="certificate-cancel" type="button">CANCEL</button><button id="certificate-issue" type="submit">DOWNLOAD PDF</button></div>
+      </form>
+      <p id="certificate-error" role="alert"></p>
+    </dialog>
 
     <script src="/completion-hints.js?v=20261102" defer></script>
     <script src="app.js?v=20261101-unlock2"></script>

@@ -23,6 +23,14 @@ body { background: radial-gradient(circle at 82% 4%, #1e3929, transparent 32%), 
 .final-game-page .kit-button:hover { filter: brightness(1.1); }
 .final-game-page .kit-button.secondary:hover { border-color: var(--lime); color: var(--lime); }
 .final-game-page .kit-note { margin-top: 16px; font-size: 13px; }
+.final-game-page .editor-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+.final-game-page .editor-option { min-width: 0; padding: 20px; border: 1px solid var(--line); background: var(--panel-2); }
+.final-game-page .editor-option h3 { margin: 0 0 14px; font-size: 18px; }
+.final-game-page .editor-option ol { padding-left: 22px; }
+.final-game-page .editor-option li { color: var(--ink); }
+.final-game-page .editor-option .kit-button.secondary { background: var(--card); }
+.final-game-page .editor-help { display: inline-block; margin: 10px 0 5px 12px; color: var(--lime); font-size: 13px; }
+.final-game-page .editor-access > p:last-child { margin-bottom: 0; }
 .final-game-page .build-nav { padding: 22px 0; margin: 38px 0 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .final-game-page .build-nav h2 { margin: 0 0 6px; font-size: clamp(26px, 3vw, 36px); }
 .final-game-page .build-nav p { margin: 0 0 15px; color: var(--muted); }
@@ -123,5 +131,5 @@ body { background: radial-gradient(circle at 82% 4%, #1e3929, transparent 32%), 
 .final-game-page .reference-links a { display: block; padding: 8px 11px; border: 1px solid var(--line); color: var(--lime); font: 11px "DM Mono", monospace; text-decoration: none; }
 .final-game-page .reference-links a:hover { border-color: var(--lime); }
 @media (max-width: 900px) { .final-game-page .code-study { grid-template-columns: minmax(0, 1fr); } .final-game-page .logic-panel { max-height: none; border-left: 1px solid var(--line); } }
-@media (max-width: 640px) { .final-game-page { width: calc(100% - 24px); } .final-game-page header { gap: 10px; padding: 12px 0; margin-bottom: 38px; } .final-game-page .saved-asset-list { columns: 1; } .final-game-page .code-header { align-items: flex-start; flex-direction: column; } .final-game-page .kit-button { width: 100%; } .final-game-page .writing-actions .writing-done { margin-left: 0; } }
+@media (max-width: 640px) { .final-game-page { width: calc(100% - 24px); } .final-game-page header { gap: 10px; padding: 12px 0; margin-bottom: 38px; } .final-game-page .saved-asset-list { columns: 1; } .final-game-page .code-header { align-items: flex-start; flex-direction: column; } .final-game-page .kit-button { width: 100%; } .final-game-page .editor-options { grid-template-columns: 1fr; } .final-game-page .editor-help { margin-left: 0; } .final-game-page .writing-actions .writing-done { margin-left: 0; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

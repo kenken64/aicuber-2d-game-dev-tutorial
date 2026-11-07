@@ -63,6 +63,8 @@ The API currently exposes:
 - `POST /api/modules/:slug/reset` with `{ "learnerId": "...", "passcode": "..." }` — clear that learner's saved module checkpoint and mark the module incomplete. Set `MODULE_RESET_PASSCODE` in the server environment to enable resets; an incorrect or missing passcode is rejected. Generated artwork, saved characters, and Final Game exports remain available. The reset dialog does not call an AI model.
 - `GET /api/quizzes/math-stem-physics-quiz?locale=en|zh|ms` — return the 40 categorized DuckDB questions without answer keys in the requested language. The UI shows 10 questions per page and keeps the current page in a learner checkpoint.
 - `POST /api/quizzes/math-stem-physics-quiz/answer` with `learnerId`, `questionId`, and `option` — save and grade one answer, returning a localized explanation plus a source link for history questions. `POST /api/quizzes/math-stem-physics-quiz/review` with `learnerId` and `locale` returns saved graded answers in the selected language; `POST /api/quizzes/math-stem-physics-quiz/retry` clears that learner's attempt.
+- `POST /api/quizzes/math-stem-physics-quiz/answer-sheet` with `passcode` and `locale` — download the 40-question answer sheet with detailed explanations as a PDF. The server checks `MODULE_RESET_PASSCODE` before generating it, and the same passcode is needed to open the PDF. This does not change quiz progress.
+- `POST /api/certificates/authorize` with `learnerId` and the instructor's reset `passcode` — approve a certificate only when all 22 modules, including the bonus, are complete. `POST /api/certificates/issue` with that learner ID, the returned one-use token, the student's `name` and a `locale` produces a printable PDF after checking completion again. Approval lasts five minutes; the name is not stored on the server.
 - `POST /api/assets?module=character-creation` with the file bytes and an `x-file-name` header — save an asset file and its DuckDB metadata.
 - `GET /api/assets/:storedName` — serve a stored asset from the configured asset volume.
 - `POST /api/sprites/generate` with a character design — generate a transparent 8-by-7 sprite sheet with a separate pose-guided, eight-frame walk/run pass, store it in the asset volume, and return its metadata. The same rules apply to templates and custom briefs; see [locomotion v2](../character-creation/data/locomotion-v2.md).
@@ -158,3 +160,5 @@ Learner identity currently uses a random browser-generated ID, not authenticated
 student accounts. Clearing browser storage changes the ID; retain the original
 ID to recover the mapping. Anyone who obtains a learner ID can request its editor
 through the tutorial API. Add authenticated student accounts before public rollout.
+
+Each learning module and the landing page has A− / percentage / A+ controls in its header. The preference is saved in the browser and applies to the whole page, including text and visual demos. Use the percentage button to reset to 100%.

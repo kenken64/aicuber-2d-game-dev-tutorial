@@ -2,7 +2,8 @@
 // The page reveals one chunk at a time; the complete script stays in the reference.
 (function () {
   const practice = {
-    'scripts/GamepadBindings.gd': 'Change the left-stick dead zone from 0.25 to 0.30. Explain which small stick movements this should ignore. Keep the change for the controller check after Main is connected.',
+    'scripts/GamepadBindings.gd': 'Change the left-stick dead zone from 0.25 to 0.30 in both the default and custom-axis paths. Explain which small stick movements this should ignore.',
+    'scripts/ControlsMenu.gd': 'Change the controls menu heading, run Main, and check that remapped keys and gamepad controls still save and restore after restarting.',
     'scripts/Player.gd': 'Change speed from 220 to 180, run the Player scene, and compare how far the hero travels in two seconds. Restore your preferred speed.',
     'scripts/Game.gd': 'Change the score earned per coin from 10 to 15. Once Pickup.gd is connected, collect two coins and predict the new score.',
     'scripts/Pickup.gd': 'Duplicate one coin in the Inspector, set its kind to heart, lose one heart, and check that this pickup restores it.',
@@ -28,11 +29,16 @@
     return section.files || [];
   }
 
+  function relayUrl() {
+    const protocol = typeof location !== 'undefined' && location.protocol === 'https:' ? 'wss:' : 'ws:';
+    let host = typeof location !== 'undefined' ? location.host : '127.0.0.1:3000';
+    if (protocol === 'ws:' && /^localhost(?::|$)/i.test(host)) host = host.replace(/^localhost/i, '127.0.0.1');
+    return `${protocol}//${host}/ws/final-game`;
+  }
+
   function codeToAdd(file) {
     if (file.name === 'scripts/Online.gd') {
-      const protocol = typeof location !== 'undefined' && location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = typeof location !== 'undefined' ? location.host : 'localhost:3000';
-      return file.code.replace('__RELAY_URL__', `${protocol}//${host}/ws/final-game`);
+      return file.code.replace('__RELAY_URL__', relayUrl());
     }
     if (file.name !== 'scripts/Game.gd') return file.code;
     // The learner already typed these lines in the Plan section.
@@ -127,5 +133,5 @@
     return tasks;
   }
 
-  window.finalGameWriting = { buildFiles, makeTasks, codeToAdd, chunks };
+  window.finalGameWriting = { buildFiles, makeTasks, codeToAdd, chunks, relayUrl };
 })();

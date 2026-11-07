@@ -19,6 +19,9 @@ try {
   assert.equal(new Set(questionBank.map(question => question.category)).size, 4);
   assert.equal("correctOption" in questionBank[0], false);
   assert.equal(await page.locator(".quiz-card").count(), 10);
+  for (const [index, letter] of ['A', 'B', 'C', 'D'].entries()) {
+    assert.match(await page.locator('.quiz-card').first().locator('.quiz-options button').nth(index).textContent(), new RegExp(`^${letter}\\. `));
+  }
   assert.equal(await page.locator('#quiz-page-tabs button').count(), 4);
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

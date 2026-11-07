@@ -64,6 +64,10 @@ window.finalGameFunctionDetails = {
     ]
   },
   'scripts/GamepadBindings.gd': {
+    set_overrides: [['overrides = mapping.duplicate(true)', 'Copy saved bindings so reconnecting a controller keeps the player’s choices.']],
+    _apply_override: [['InputMap.action_add_event(action, event)', 'Apply a saved button or axis to the currently assigned controller.']],
+    specs_for: [['if overrides.has(action):', 'Return a custom mapping when present, otherwise the default stick, D-pad, or button bindings.']],
+    describe: [['for binding in specs_for(action):', 'Describe the custom or default bindings in the controls menu.']],
     bind_player: [
       ['var prefix := "p1_" if slot == 1 else "p2_"', 'Choose the action names for the requested player.'],
       ['_clear_pad_events(prefix + suffix)', 'Remove that player’s old pad bindings before assigning a new device; keyboard bindings stay.'],
@@ -91,6 +95,24 @@ window.finalGameFunctionDetails = {
       ['InputMap.action_add_event(action, event)', 'Attach the chosen button to the named game action.']
     ]
   },
+  'scripts/ControlsMenu.gd': {
+    _ready: [['process_mode = Node.PROCESS_MODE_ALWAYS', 'Keep the controls menu usable while gameplay is paused.'], ['_load_settings()', 'Restore the saved keyboard and controller choices.']],
+    _build_menu: [['for label_text in ACTIONS:', 'Create a keyboard and gamepad binding button for every action.']],
+    open_menu: [['get_tree().paused = true', 'Pause gameplay before showing the menu.']],
+    close_menu: [['get_tree().paused = was_paused', 'Restore the pause state from before the menu opened.']],
+    _begin_capture: [['awaiting_action = action', 'Remember which action and device type the next input will replace.']],
+    _input: [['var conflict = _find_conflict(awaiting_action, awaiting_kind, binding)', 'Reject inputs already used by another action, then apply and save a valid choice.']],
+    _unhandled_input: [['event.is_action_pressed("ui_cancel")', 'Close the menu with the normal UI cancel action when not capturing.']],
+    _key_spec: [['event.physical_keycode', 'Save the physical key when available, with a logical key fallback.']],
+    _set_keyboard: [['InputMap.action_erase_event(action, old)', 'Remove only previous keyboard events and keep gamepad events.'], ['InputMap.action_add_event(action, key)', 'Add the new keyboard event.']],
+    _find_conflict: [['GamepadBindings.specs_for(other)', 'Check for conflicts on the same player or shared gamepad actions.']],
+    _action_label: [['if ACTIONS[label_text] == action:', 'Find a readable label for the action name.']],
+    _refresh: [['GamepadBindings.describe(action)', 'Update each row with the current keyboard and controller bindings.']],
+    _apply_gamepads: [['GamepadBindings.set_overrides(pad_overrides)', 'Remember controller choices and reassign connected devices.']],
+    _save_settings: [['config.save(SAVE_PATH)', 'Write the controls configuration into the local user folder.']],
+    _load_settings: [['config.load(SAVE_PATH)', 'Read saved bindings if a controls configuration exists.']],
+    _restore_defaults: [['pad_overrides.clear()', 'Return keyboard and controller bindings to their original defaults.']]
+  },
   'scripts/Player.gd': {
     _ready: [
       ['add_to_group("heroes")', 'Register this node as a hero so pickups, hazards, and enemies can discover it.']
@@ -101,25 +123,30 @@ window.finalGameFunctionDetails = {
       ['var axis = remote_axis if remote_controlled else Input.get_axis(prefix + "left", prefix + "right")', 'Use host-received movement for an online guest; otherwise read this player’s keyboard or pad actions.'],
       ['remote_jump = false', 'Consume one-frame remote button presses so holding an old packet cannot repeat an action.'],
       ['velocity.y += 1100.0 * delta if not is_on_floor() else 0.0', 'Apply gravity while airborne; delta makes the change proportional to the physics step.'],
-      ['if roll_now and roll_cooldown <= 0.0 and is_on_floor():', 'Start a short fast roll only when grounded and its cooldown has ended.'],
-      ['velocity.x = facing * speed * 1.65 if roll_time > 0.0 else axis * speed', 'Roll in the facing direction at extra speed, or move at normal speed from the input axis.'],
-      ['if jump_now and is_on_floor():', 'Set upward velocity only when the hero is standing on a floor.'],
+      ['if roll_now and not crouching and roll_cooldown <= 0.0 and is_on_floor():', 'Start a short fast roll only when grounded and its cooldown has ended.'],
+      ['velocity.x = facing * speed * 1.65 if roll_time > 0.0 else (0.0 if crouching else axis * speed)', 'Roll in the facing direction, stop while crouched, or move from the input axis.'],
+      ['if jump_now and not crouching and is_on_floor():', 'Set upward velocity only when the hero is standing on a floor.'],
       ['if attack_now and attack_wait <= 0.0:', 'Begin a sword swing only after the previous attack has cooled down.'],
       ['if absf(gap.x) < 75.0 and absf(gap.y) < 55.0 and gap.x * facing > -10.0:', 'Hit targets inside the nearby attack box and mostly in front of the hero; blade gear adds damage.'],
       ['move_and_slide()', 'Move the CharacterBody2D and let Godot resolve collisions.'],
       ['sprite.play(animation)', 'Choose the available jump, run, idle, roll, or attack frames after movement.']
     ],
+    _set_crouching: [['test_move(global_transform, Vector2(0, -height_change))', 'Keep the smaller collision shape while a low ceiling blocks standing.'], ['hitbox.shape.size =', 'Resize this player’s own rectangular hitbox when crouching.']],
+    _apply_crouch_visual: [['sprite.scale =', 'Use a crouch animation when available or a shorter visual as a fallback.']],
     hurt: [
       ['if hurt_wait > 0.0 or health <= 0:', 'Ignore repeated hits during the brief invulnerability period or after defeat.'],
       ['health -= 1', 'Remove one heart.'],
-      ['hurt_wait = 1.0', 'Start a one-second delay before another hit can land.']
+      ['hurt_wait = 1.0', 'Start a one-second delay before another hit can land.'],
+      ['sprite.play("death")', 'At zero health, play the non-looping death animation when one exists.'],
+      ['sprite.play("hurt")', 'For a surviving hero, play the hurt animation when available.']
     ],
     heal: [
       ['health = mini(3, health + 1)', 'Add one heart but cap health at three.']
     ]
   },
   'scripts/Pickup.gd': {
-    _ready: [['body_entered.connect(_on_body_entered)', 'Call the pickup handler when a physics body enters this Area2D.']],
+    _ready: [['_update_texture()', 'Show the coin or heart image for this pickup.'], ['body_entered.connect(_on_body_entered)', 'Call the pickup handler when a physics body enters this Area2D.']],
+    _update_texture: [['$Sprite2D.texture =', 'Use the assigned heart texture for hearts and the original texture for coins.']],
     _on_body_entered: [
       ['if not body.is_in_group("heroes") or not body.active:', 'Ignore enemies, scenery, and inactive heroes.'],
       ['Game.collect_coin()', 'A coin updates the shared wallet, level count, and score.'],
@@ -148,7 +175,7 @@ window.finalGameFunctionDetails = {
   'scripts/Water.gd': {
     _ready: [['body_entered.connect(_on_body_entered)', 'Run the handler whenever something enters the water area.']],
     _on_body_entered: [
-      ['if body.is_in_group("heroes"):', 'Damage a hero through its hurt() method.'],
+      ['if body.is_in_group("heroes") and body.active:', 'Damage a hero through its hurt() method.'],
       ['elif body.is_in_group("boulders") and not splashed:', 'Process the first boulder impact once.'],
       ['body.linear_damp = 8.0', 'Increase drag so the boulder slows visibly in the water.'],
       ['if splash_scene:', 'Instantiate the assigned splash effect, add it to the scene, and place it at the boulder.']
@@ -190,12 +217,13 @@ window.finalGameFunctionDetails = {
       ['process_mode = Node.PROCESS_MODE_ALWAYS', 'Keep Main and the UI responsive while the scene tree is paused.'],
       ['Game.start_run()', 'Reset attempt-only coins, score, equipment, and boss state.'],
       ['p2.active = false', 'Hide player two until a local player joins or an online guest connects.'],
+      ['p1.add_collision_exception_with(p2)', 'Prevent the hidden second player from blocking the first, and let both players pass each other.'],
       ['_assign_gamepads()', 'Bind the currently connected controllers to the right players.'],
       ['exit_area.body_entered.connect(_on_exit)', 'Connect the exit trigger; later lines wire the volume, ending, room, and shop controls.']
     ],
     _process: [
       ['_assign_gamepads()', 'Refresh bindings if the active player arrangement changes.'],
-      ['if Input.is_action_just_pressed("pause"):', 'Toggle the paused state on a new pause press.'],
+      ['if Input.is_action_just_pressed("pause"):', 'Open the controls menu and pause gameplay until it is closed.'],
       ['if online.is_client:', 'A guest displays snapshots but leaves authoritative shop and death decisions to the host.'],
       ['if Input.is_action_just_pressed("toggle_coop") and not p2.active:', 'Show local player two when the join action is pressed.'],
       ['$UI/HUD/ShopPanel.visible = _shop_player() != null', 'Show shop controls while an active hero overlaps the shop.'],
@@ -205,7 +233,7 @@ window.finalGameFunctionDetails = {
     _on_joy_connection_changed: [['_assign_gamepads()', 'Recompute player bindings after Godot reports a controller connection change.']],
     _assign_gamepads: [
       ['var pads := Input.get_connected_joypads()', 'Read the connected controller IDs in their current order.'],
-      ['var local_coop := p2.active and not p2.remote_controlled and not online.is_client', 'Treat P2 as local only when it is active and not driven by an online guest.'],
+      ['var local_coop: bool = p2.active and not p2.remote_controlled and not online.is_client', 'Treat P2 as local only when it is active and not driven by an online guest.'],
       ['var next_p1 := second if local_coop else first', 'In solo, P1 gets the first pad; in local co-op, P1 gets the second pad or keyboard.'],
       ['var next_p2 := first if local_coop else -1', 'Give the first pad to local P2, or remove its pad binding otherwise.'],
       ['if next_p1 != p1_pad:', 'Rebind only when a device assignment changed, avoiding repeated Input Map edits.']
@@ -232,6 +260,7 @@ window.finalGameFunctionDetails = {
       ['finished = true', 'Stop gameplay and deactivate both heroes.'],
       ['_show_result("You found the relic. Keep it or return it?", true)', 'Open the final choice panel.']
     ],
+    _game_over_after_animation: [['await get_tree().create_timer(0.9).timeout', 'Give the death animation time to play before the game-over panel appears.']],
     _show_result: [
       ['finale.show()', 'Display the finale layer.'],
       ['$UI/Finale/Result.text = message', 'Set the supplied ending or game-over message.'],

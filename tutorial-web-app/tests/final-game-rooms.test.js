@@ -34,8 +34,8 @@ test('Final Game room relays only guest input and host world state', async () =>
     assert.deepEqual(await hostNotice, { type: 'peer_joined' });
 
     const input = nextMessage(host);
-    guest.send(JSON.stringify({ type: 'input', axis: 1, jump: true, attack: false, interact: false }));
-    assert.deepEqual(await input, { type: 'input', axis: 1, jump: true, attack: false, interact: false });
+    guest.send(JSON.stringify({ type: 'input', axis: 1, jump: true, roll: true, crouch: true, attack: false, interact: false }));
+    assert.deepEqual(await input, { type: 'input', axis: 1, jump: true, roll: true, crouch: true, attack: false, interact: false });
 
     const trade = nextMessage(host);
     guest.send(JSON.stringify({ type: 'trade', action: 'salvage' }));

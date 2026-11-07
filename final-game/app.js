@@ -117,6 +117,46 @@ Object.assign(copy.ms, {
   progressNote: 'Senarai ini menyimpan tempat anda dalam pelayar ini. Semak hasilnya dalam Godot sebelum menandakan tugasan selesai.'
 });
 
+Object.assign(copy.en, {
+  intro: 'Build one complete 2D level in a locally installed Godot editor or a cloud workspace, using the characters, art, and systems you made across modules 1–18.',
+  editorChoice: 'Choose one way to work. Both use Godot 4 and the same starter project.',
+  localEditorTitle: 'Option 1 · Godot on your computer',
+  localStepOne: 'Download and extract the starter ZIP above. Install or open Godot 4 on your computer.',
+  localStepTwo: 'In Godot’s Project Manager, choose Import, select the extracted project.godot file, and open the project.',
+  localStepThree: 'To use your own PNG and JSON files, copy them into assets/my-game in the extracted project folder. Create the folder if needed, then check Godot’s FileSystem panel.',
+  downloadGodot: 'Get Godot 4 ↗',
+  localSaveNote: 'Your local changes stay in the project folder on your computer. Back up that folder or make a ZIP when you finish.',
+  cloudEditorTitle: 'Option 2 · Cloud workspace',
+  editorSyncNote: 'Local and cloud projects do not sync automatically. To continue a cloud project locally, download its project ZIP from the cloud workspace, extract it, and import its project.godot file in Godot.',
+  finishFive: 'Back up the finished project: copy the local project folder or download the cloud project ZIP, then open the copy to confirm your changes.'
+});
+Object.assign(copy.zh, {
+  intro: '使用本机安装的 Godot 编辑器或云端工作区，结合第 1–18 章制作的角色、美术和系统，完成一个完整的 2D 关卡。',
+  editorChoice: '选择一种方式制作。两种方式都使用 Godot 4 和相同的入门项目。',
+  localEditorTitle: '方式 1 · 本机 Godot 编辑器',
+  localStepOne: '下载并解压上方的入门 ZIP。在电脑上安装或打开 Godot 4。',
+  localStepTwo: '在 Godot 项目管理器中选择“导入”，选择解压后的 project.godot 文件，然后打开项目。',
+  localStepThree: '要使用自己的 PNG 和 JSON 文件，请将它们复制到解压后项目文件夹中的 assets/my-game。必要时先创建该文件夹，再查看 Godot 的 FileSystem 面板。',
+  downloadGodot: '获取 Godot 4 ↗',
+  localSaveNote: '本机修改保存在电脑的项目文件夹中。完成后请备份该文件夹或将其压缩为 ZIP。',
+  cloudEditorTitle: '方式 2 · 云端工作区',
+  editorSyncNote: '本机和云端项目不会自动同步。要在本机继续云端项目，请从云端工作区下载项目 ZIP，解压后在 Godot 中导入其中的 project.godot 文件。',
+  finishFive: '备份完成的项目：复制本机项目文件夹或下载云端项目 ZIP，再打开副本确认改动。'
+});
+Object.assign(copy.ms, {
+  intro: 'Bina satu tahap 2D yang lengkap dalam editor Godot yang dipasang pada komputer atau dalam ruang kerja awan, menggunakan watak, seni dan sistem daripada modul 1–18.',
+  editorChoice: 'Pilih satu cara untuk bekerja. Kedua-duanya menggunakan Godot 4 dan projek permulaan yang sama.',
+  localEditorTitle: 'Pilihan 1 · Godot pada komputer',
+  localStepOne: 'Muat turun dan ekstrak ZIP permulaan di atas. Pasang atau buka Godot 4 pada komputer anda.',
+  localStepTwo: 'Dalam Pengurus Projek Godot, pilih Import, pilih fail project.godot yang diekstrak, kemudian buka projek.',
+  localStepThree: 'Untuk menggunakan fail PNG dan JSON sendiri, salinnya ke assets/my-game dalam folder projek yang diekstrak. Cipta folder jika perlu, kemudian semak panel FileSystem Godot.',
+  downloadGodot: 'Dapatkan Godot 4 ↗',
+  localSaveNote: 'Perubahan setempat disimpan dalam folder projek pada komputer anda. Sandarkan folder itu atau hasilkan ZIP apabila selesai.',
+  cloudEditorTitle: 'Pilihan 2 · Ruang kerja awan',
+  editorSyncNote: 'Projek setempat dan awan tidak disegerakkan secara automatik. Untuk meneruskan projek awan secara setempat, muat turun ZIP projek dari ruang kerja awan, ekstrak dan import fail project.godot dalam Godot.',
+  finishFive: 'Sandarkan projek siap: salin folder projek setempat atau muat turun ZIP projek awan, kemudian buka salinannya untuk mengesahkan perubahan.'
+});
+
 const guide = window.finalGameGuide || [];
 const walkthroughs = window.finalGameWalkthrough || {};
 const functionDetails = window.finalGameFunctionDetails || {};
@@ -485,7 +525,7 @@ function renderGuide(focusSection = '', focusSelector = '') {
       reference.append(element('p', 'reference-hint', words.referenceHint));
       const header = element('div', 'code-header');
       header.append(element('h3', '', `${words.codeLabel}: ${file.name}`));
-      const code = file.code.replace('__RELAY_URL__', `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/final-game`);
+      const code = file.code.replace('__RELAY_URL__', writing.relayUrl());
       reference.append(header, createCodeStudy(code, walkthroughs[file.name] || {}, words, file.name));
       card.append(reference);
     });

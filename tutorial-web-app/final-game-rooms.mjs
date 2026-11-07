@@ -56,8 +56,8 @@ export function attachFinalGameRooms(server, { authorizeUpgrade = async () => tr
     if (message.type === 'input' && room.guest === socket) {
       send(room.host, {
         type: 'input', axis: Number(message.axis) || 0,
-        jump: message.jump === true, attack: message.attack === true,
-        interact: message.interact === true,
+        jump: message.jump === true, roll: message.roll === true, crouch: message.crouch === true,
+        attack: message.attack === true, interact: message.interact === true,
       });
     } else if (message.type === 'trade' && room.guest === socket) {
       const action = String(message.action || '');

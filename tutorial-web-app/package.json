@@ -14,6 +14,8 @@
     "test:boss": "node --test tests/boss-layout.test.js tests/boss-pipeline.test.js",
     "test:branding": "node --test tests/branding.test.js",
     "test:quiz-browser": "node tests/quiz-browser.js",
+    "test:quiz-answer-sheet": "node tests/quiz-answer-sheet-browser.js",
+    "test:certificate": "node tests/certificate-browser.js",
     "test:storyline-browser": "node tests/storyline-browser.js",
     "test:credits-browser": "node tests/credits-browser.js",
     "test:marketplace-browser": "node tests/marketplace-browser.js",
@@ -34,13 +36,16 @@
     "test:chat": "node --test tests/chat.test.js",
     "test:modules": "node --test tests/modules.test.js",
     "test:module-unlock": "node tests/module-unlock-browser.js",
-    "test:reset-passcode": "node tests/reset-passcode-browser.js"
+    "test:reset-passcode": "node tests/reset-passcode-browser.js",
+    "test:text-size": "node tests/text-size-browser.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
     "@duckdb/node-api": "1.5.5-r.5",
+    "fontkit": "^2.0.4",
+    "pdfkit": "^0.17.2",
     "phaser": "^3.90.0",
     "sharp": "^0.35.4",
     "ws": "^8.21.3"

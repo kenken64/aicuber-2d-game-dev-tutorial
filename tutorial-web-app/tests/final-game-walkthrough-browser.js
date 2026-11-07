@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -40,6 +40,12 @@ try {
     await page.goto(`${baseUrl}/final-game/#player`);
     await page.waitForFunction(() => !document.documentElement.hasAttribute('data-module-gated'));
     await page.locator('#player .writing-stepper').waitFor();
+    assert.match(await page.locator('#local-editor-title').textContent(), /computer/i);
+    assert.match(await page.locator('#cloud-editor-title').textContent(), /cloud/i);
+    assert.match(await page.locator('[data-copy="localStepTwo"]').textContent(), /Import.*project\.godot/);
+    assert.match(await page.locator('[data-copy="editorSyncNote"]').textContent(), /do not sync automatically/);
+    assert.equal(await page.locator('.editor-option a[href="/api/final-game/starter-kit"]').count(), 1);
+    assert.equal(await page.locator('.editor-option a[href="/setup-godot-with-ai/#cloud-title"]').count(), 1);
     assert.equal(await page.locator('.writing-stepper').count(), 9);
     assert.equal(await page.locator('.copy-code').count(), 0);
     assert.ok(await page.locator('.file-reference').count() > 0);
@@ -77,6 +83,25 @@ try {
       return { missing, invalid, incomplete, relayResolved: !window.finalGameWriting.codeToAdd(online).includes('__RELAY_URL__') };
     });
     assert.deepEqual(audit, { missing: [], invalid: [], incomplete: [], relayResolved: true });
+    const examples = await page.evaluate(() => {
+      const files = window.finalGameGuide.flatMap(section => section.files || []);
+      return {
+        main: files.find(file => file.name === 'scripts/Main.gd').code,
+        pickup: files.find(file => file.name === 'scripts/Pickup.gd').code,
+        relay: window.finalGameWriting.relayUrl(),
+      };
+    });
+    assert.match(examples.main, /var local_coop: bool =/);
+    assert.match(examples.main, /p1\.add_collision_exception_with\(p2\)/);
+    assert.ok(examples.main.includes('CREDITS\\nDesign: your name'));
+    assert.match(examples.pickup, /heart_texture/);
+    for (const name of ['GamepadBindings', 'ControlsMenu', 'Player', 'Enemy', 'Main']) {
+      const expected = await readFile(new URL(`../../final-game/starter-project/reference-code/${name}.gd.txt`, import.meta.url), 'utf8');
+      const shown = await page.evaluate(fileName => window.finalGameGuide.flatMap(section => section.files || [])
+        .find(file => file.name === `scripts/${fileName}.gd`).code, name);
+      assert.equal(shown.trim(), expected.trim(), `${name} starter reference matches the lesson`);
+    }
+    assert.match(examples.relay, /^ws:\/\/127\.0\.0\.1:/);
 
     await page.locator('#plan .writing-done').click();
     assert.match(await page.locator('#plan .writing-count').textContent(), /2 OF 5/);
@@ -110,10 +135,13 @@ try {
     assert.ok(await page.locator('#player .file-reference').first().locator('.function-steps li').count() > 4);
 
     await page.click('[data-locale="zh"]');
+    assert.match(await page.locator('#local-editor-title').textContent(), /本机/);
+    assert.match(await page.locator('#cloud-editor-title').textContent(), /云端/);
     await page.locator('#player .file-reference').first().locator('summary').click();
     assert.equal(await page.locator('#player .logic-panel h4').first().textContent(), '逻辑流程');
     assert.equal(await page.locator('#player .gdscript code').first().textContent(), rawCode);
     await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.locator('.editor-options').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length), 1);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
     console.log('PASS small writing steps, full code coverage, optional complete-script hints, saved progress, walkthrough, localization, and mobile layout');

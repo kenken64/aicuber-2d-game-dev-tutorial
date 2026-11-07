@@ -306,6 +306,13 @@ Object.assign(interfaceCopy.ms.tags, { REWARDS: "GANJARAN", RANKING: "KEDUDUKAN"
 Object.assign(interfaceCopy.ms.tags, { GODOT: "GODOT" });
 Object.assign(interfaceCopy.ms.tags, { AI: "AI" });
 
+const certificateCopy = {
+  en: { eyebrow: 'YOUR ACHIEVEMENT', title: 'Certificate of completion', button: 'DOWNLOAD CERTIFICATE', progress: count => `Complete all 22 modules to unlock your certificate, including the bonus module. ${count} / 22 complete.`, ready: 'All 22 modules complete. Ask your instructor to approve your certificate.', authTitle: 'Instructor approval', authDescription: 'Ask your instructor to enter the module reset passcode.', passcode: 'Instructor passcode', continue: 'CONTINUE', cancel: 'CANCEL', nameTitle: 'Your certificate', nameDescription: 'Enter your name as it should appear on your certificate.', name: 'Student name', download: 'DOWNLOAD PDF', wrong: 'Incorrect passcode. Please try again.', unavailable: 'The reset passcode is not configured on the server. Contact the administrator.', incomplete: 'Complete all 22 modules before downloading a certificate.', expired: 'Instructor approval expired. Please enter the passcode again.', invalidName: 'Enter a name of up to 80 characters on one line.', unsupportedName: 'Some characters cannot be printed together. Please try a supported spelling or contact your instructor.', failed: 'Could not create the certificate. Please try again.' },
+  zh: { eyebrow: '你的成就', title: '课程完成证书', button: '下载证书', progress: count => `完成全部 22 个模块（包括奖励模块）即可解锁证书。已完成 ${count} / 22。`, ready: '已完成全部 22 个模块，请老师批准你的证书。', authTitle: '老师批准', authDescription: '请老师输入模块重置密码。', passcode: '老师密码', continue: '继续', cancel: '取消', nameTitle: '你的证书', nameDescription: '输入证书上要显示的姓名。', name: '学生姓名', download: '下载 PDF', wrong: '密码不正确，请重试。', unavailable: '服务器尚未配置重置密码，请联系管理员。', incomplete: '请先完成全部 22 个模块。', expired: '老师的批准已过期，请重新输入密码。', invalidName: '请输入不超过 80 个字符的单行姓名。', unsupportedName: '部分字符无法一起打印，请尝试其他拼写或联系老师。', failed: '无法生成证书，请重试。' },
+  ms: { eyebrow: 'PENCAPAIAN ANDA', title: 'Sijil penyempurnaan', button: 'MUAT TURUN SIJIL', progress: count => `Lengkapkan semua 22 modul, termasuk modul bonus, untuk membuka sijil. ${count} / 22 selesai.`, ready: 'Semua 22 modul selesai. Minta pengajar meluluskan sijil anda.', authTitle: 'Kelulusan pengajar', authDescription: 'Minta pengajar memasukkan kod laluan set semula modul.', passcode: 'Kod laluan pengajar', continue: 'TERUSKAN', cancel: 'BATAL', nameTitle: 'Sijil anda', nameDescription: 'Masukkan nama seperti yang hendak dipaparkan pada sijil.', name: 'Nama pelajar', download: 'MUAT TURUN PDF', wrong: 'Kod laluan salah. Sila cuba lagi.', unavailable: 'Kod set semula belum dikonfigurasi pada pelayan. Hubungi pentadbir.', incomplete: 'Lengkapkan semua 22 modul dahulu.', expired: 'Kelulusan pengajar telah tamat. Masukkan kod laluan semula.', invalidName: 'Masukkan nama satu baris dengan maksimum 80 aksara.', unsupportedName: 'Sesetengah aksara tidak dapat dicetak bersama. Cuba ejaan yang disokong atau hubungi pengajar.', failed: 'Sijil tidak dapat dihasilkan. Sila cuba lagi.' },
+};
+for (const locale of supportedLocales) Object.assign(interfaceCopy[locale], { certificateEyebrow: certificateCopy[locale].eyebrow, certificateTitle: certificateCopy[locale].title, certificateButton: certificateCopy[locale].button });
+
 const moduleGrid = document.querySelector("#module-grid");
 const moduleNav = document.querySelector("#module-nav");
 const moduleSearch = document.querySelector("#module-search");
@@ -316,6 +323,16 @@ const completedCount = document.querySelector("#completed-count");
 const moduleCount = document.querySelector("#module-count");
 const progressText = document.querySelector("#progress-text");
 const languageToggle = document.querySelector("#language-toggle");
+const certificateDialog = document.querySelector('#certificate-dialog');
+const certificateAuthForm = document.querySelector('#certificate-authorize-form');
+const certificateNameForm = document.querySelector('#certificate-name-form');
+const certificatePasscode = document.querySelector('#certificate-passcode');
+const certificateName = document.querySelector('#certificate-name');
+const certificateError = document.querySelector('#certificate-error');
+const certificateOpen = document.querySelector('#certificate-open');
+const certificateAuthorize = document.querySelector('#certificate-authorize');
+const certificateIssue = document.querySelector('#certificate-issue');
+let certificateToken = '', certificateBusy = false;
 
 function modulePath(module) {
   return `/${module.slug}/`;
@@ -446,6 +463,11 @@ function renderProgress() {
   progressValue.textContent = `${percentage}%`;
   progressBar.style.width = `${percentage}%`;
   progressText.textContent = interfaceCopy[currentLocale].progress(count, modules.length);
+  const required = modules.filter(module => moduleLevel(module) >= 1 && moduleLevel(module) <= 22);
+  const requiredCount = required.filter(module => completedModules.has(module.slug)).length;
+  const eligible = required.length === 22 && requiredCount === 22;
+  certificateOpen.disabled = !eligible;
+  document.querySelector('#certificate-status').textContent = eligible ? certificateCopy[currentLocale].ready : certificateCopy[currentLocale].progress(requiredCount);
 }
 
 async function toggleComplete(slug) {
@@ -490,6 +512,75 @@ document.querySelector("#menu-toggle").addEventListener("click", () => {
 
 moduleNav.addEventListener("click", () => {
   document.querySelector(".sidebar").classList.remove("open");
+});
+
+function certificateStage(stage) {
+  const text = certificateCopy[currentLocale];
+  const isName = stage === 'name';
+  certificateAuthForm.hidden = isName;
+  certificateNameForm.hidden = !isName;
+  document.querySelector('#certificate-dialog-title').textContent = isName ? text.nameTitle : text.authTitle;
+  document.querySelector('#certificate-dialog-description').textContent = isName ? text.nameDescription : text.authDescription;
+  document.querySelector('#certificate-passcode-label').textContent = text.passcode;
+  document.querySelector('#certificate-name-label').textContent = text.name;
+  certificateAuthorize.textContent = text.continue;
+  certificateIssue.textContent = text.download;
+  certificateDialog.querySelectorAll('.certificate-cancel').forEach(button => { button.textContent = text.cancel; });
+  (isName ? certificateName : certificatePasscode).focus();
+}
+function setCertificateBusy(value) {
+  certificateBusy = value;
+  certificateDialog.querySelectorAll('button, input').forEach(element => { element.disabled = value; });
+}
+certificateOpen.addEventListener('click', () => {
+  if (certificateOpen.disabled) return;
+  certificateToken = ''; certificatePasscode.value = ''; certificateName.value = ''; certificateError.textContent = '';
+  certificateDialog.showModal(); certificateStage('auth');
+});
+certificateDialog.querySelectorAll('.certificate-cancel').forEach(button => button.addEventListener('click', () => { if (!certificateBusy) certificateDialog.close(); }));
+certificateDialog.addEventListener('cancel', event => { if (certificateBusy) event.preventDefault(); });
+certificateDialog.addEventListener('close', () => { certificateToken = ''; certificatePasscode.value = ''; certificateName.value = ''; certificateError.textContent = ''; });
+certificateAuthForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (certificateBusy || !certificatePasscode.value) return;
+  const text = certificateCopy[currentLocale];
+  setCertificateBusy(true); certificateError.textContent = '';
+  try {
+    const response = await fetch('/api/certificates/authorize', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, passcode: certificatePasscode.value }) });
+    if (!response.ok) throw new Error(response.status === 403 ? text.wrong : response.status === 503 ? text.unavailable : response.status === 409 ? text.incomplete : text.failed);
+    const data = await response.json();
+    if (typeof data.token !== 'string') throw new Error(text.failed);
+    certificateToken = data.token;
+    certificatePasscode.value = '';
+    setCertificateBusy(false);
+    certificateStage('name');
+  } catch (error) { certificateError.textContent = error.message || text.failed; }
+  finally { setCertificateBusy(false); if (certificateDialog.open && !certificateAuthForm.hidden) { certificatePasscode.focus(); certificatePasscode.select(); } }
+});
+certificateNameForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (certificateBusy || !certificateToken || !certificateName.value.trim()) return;
+  const text = certificateCopy[currentLocale];
+  setCertificateBusy(true); certificateError.textContent = '';
+  try {
+    const response = await fetch('/api/certificates/issue', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, token: certificateToken, name: certificateName.value, locale: currentLocale, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      if (response.status === 403 || response.status === 409) {
+        certificateToken = ''; setCertificateBusy(false); certificateStage('auth');
+        if (response.status === 409) initializeApp();
+        throw new Error(response.status === 403 ? text.expired : text.incomplete);
+      }
+      throw new Error(body.error === 'unsupported' ? text.unsupportedName : body.error === 'name' ? text.invalidName : text.failed);
+    }
+    const blob = await response.blob();
+    if (blob.type !== 'application/pdf') throw new Error(text.failed);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = 'godot-forge-certificate.pdf'; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    certificateDialog.close();
+  } catch (error) { certificateError.textContent = error.message || text.failed; }
+  finally { setCertificateBusy(false); if (certificateDialog.open) (certificateAuthForm.hidden ? certificateName : certificatePasscode).focus(); }
 });
 
 async function initializeApp() {

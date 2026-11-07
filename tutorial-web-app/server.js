@@ -4,7 +4,7 @@ import { promises as fs } from "node:fs";
 import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { DuckDBInstance } from "@duckdb/node-api";
 import sharp from "sharp";
 import { inspectBossLayout, bossRows } from "../boss-creation/sprite-layout.mjs";
@@ -13,6 +13,8 @@ import { animationRows, gaitPrompt, createGaitGuide, normalizeGrid, validateGait
 import { characterManifest, bossManifest, assetPackManifest } from './sprite-manifest.mjs';
 import { quizQuestionBank } from './quiz-question-bank.mjs';
 import { quizQuestionTranslations } from './quiz-question-translations.mjs';
+import { makeQuizAnswerPdf } from './quiz-answer-pdf.mjs';
+import { makeCertificatePdf, validateCertificateName } from './certificate-pdf.mjs';
 import { attachMultiplayerRooms } from './multiplayer-rooms.mjs';
 import { attachFinalGameRooms } from './final-game-rooms.mjs';
 import { createMarketplaceAuth } from './marketplace-auth.mjs';
@@ -71,6 +73,12 @@ const port = Number(process.env.PORT || 3000);
 const maxAssetBytes = 50 * 1024 * 1024;
 const resetPasscode = process.env.MODULE_RESET_PASSCODE || "";
 const resetPasscodeDigest = resetPasscode ? createHash('sha256').update(resetPasscode, 'utf8').digest() : null;
+const certificateAuthorizations = new Map();
+
+async function certificateEligible(learnerId) {
+  const required = (await getModules(learnerId)).filter(module => Number(module.level) >= 1 && Number(module.level) <= 22);
+  return required.length === 22 && required.every(module => module.completed);
+}
 const openAiApiKey = process.env.OPENAI_API_KEY || "";
 const openAiApiBase = (process.env.OPENAI_API_BASE || "https://api.openai.com/v1").replace(/\/+$/, "");
 const openAiImageModel = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2.5-sunburst";
@@ -931,6 +939,7 @@ async function serveStatic(request, response, pathname) {
   const segments = pathname.split('/').filter(Boolean);
   const phaserBundle = pathname === '/node_modules/phaser/dist/phaser.min.js';
   if (segments.some(segment => segment.startsWith('.')) || (segments.includes('node_modules') && !phaserBundle) ||
+      ['quiz-question-bank.mjs', 'quiz-question-translations.mjs', 'quiz-answer-details.mjs', 'quiz-answer-pdf.mjs'].includes(segments.at(-1)) ||
       ['godot-cloud', 'ollama-api-proxy', 'tmp', 'output', 'storage'].includes(segments[0]) ||
       (segments[0] === 'tutorial-web-app' && segments[1] === 'storage') ||
       (segments[0] === 'final-game' && segments[1] === 'dist')) return false;
@@ -990,11 +999,12 @@ async function serveStatic(request, response, pathname) {
     const isAppPage = path.extname(filePath).toLowerCase() === ".html"
       && (path.resolve(filePath) === path.join(publicDirectory, "index.html") || isModulePage);
     if (isAppPage) {
-      const html = file.toString("utf8");
+      let html = file.toString("utf8");
       const themeAssets = '    <link rel="stylesheet" href="/theme.css" />\n    <script src="/theme.js" defer></script>\n';
-      if (!html.includes("/theme.js")) {
-        file = Buffer.from(html.replace(/<\/head>/i, `${themeAssets}</head>`));
-      }
+      const textSizeAssets = '    <link rel="stylesheet" href="/text-size.css" />\n    <script src="/text-size.js" defer></script>\n';
+      if (!html.includes("/theme.js")) html = html.replace(/<\/head>/i, `${themeAssets}</head>`);
+      if (!html.includes("/text-size.js")) html = html.replace(/<\/head>/i, `${textSizeAssets}</head>`);
+      file = Buffer.from(html);
     }
     if (marketplaceAuth.enabled && path.extname(filePath).toLowerCase() === '.html') {
       file = Buffer.from(file.toString('utf8').replace(/<head\b[^>]*>/i, '$&<script src="/api/2ndbrain/session.js"></script>'));
@@ -1531,6 +1541,42 @@ async function handleApi(request, response, url) {
     });
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/certificates/authorize') {
+    const body = await readJson(request);
+    if (!validLearnerId(body.learnerId)) return sendJson(response, 400, { error: 'A valid learner is required.' });
+    if (!resetPasscodeDigest) return sendJson(response, 503, { error: 'The reset passcode is not configured.' });
+    if (typeof body.passcode !== 'string' || body.passcode.length > 128 || !timingSafeEqual(createHash('sha256').update(body.passcode, 'utf8').digest(), resetPasscodeDigest)) {
+      return sendJson(response, 403, { error: 'Incorrect reset passcode.' });
+    }
+    if (!await certificateEligible(body.learnerId)) return sendJson(response, 409, { error: 'Complete all 22 modules first.' });
+    const now = Date.now();
+    for (const [token, grant] of certificateAuthorizations) if (grant.expiresAt <= now) certificateAuthorizations.delete(token);
+    if (certificateAuthorizations.size >= 1000) return sendJson(response, 429, { error: 'Too many certificate requests. Try again shortly.' });
+    const token = randomBytes(32).toString('base64url');
+    certificateAuthorizations.set(token, { learnerId: body.learnerId, expiresAt: now + 5 * 60 * 1000 });
+    response.setHeader('cache-control', 'no-store');
+    return sendJson(response, 200, { token });
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/certificates/issue') {
+    const body = await readJson(request);
+    if (!validLearnerId(body.learnerId)) return sendJson(response, 400, { error: 'A valid learner is required.' });
+    const grant = typeof body.token === 'string' ? certificateAuthorizations.get(body.token) : null;
+    if (!grant || grant.learnerId !== body.learnerId || grant.expiresAt <= Date.now()) {
+      if (grant && grant.expiresAt <= Date.now()) certificateAuthorizations.delete(body.token);
+      return sendJson(response, 403, { error: 'Instructor authorization expired or is invalid.' });
+    }
+    const validation = validateCertificateName(body.name);
+    if (validation.error) return sendJson(response, 400, { error: validation.error });
+    certificateAuthorizations.delete(body.token);
+    if (!await certificateEligible(body.learnerId)) return sendJson(response, 409, { error: 'Complete all 22 modules first.' });
+    const timeZone = typeof body.timeZone === 'string' && body.timeZone.length <= 100 ? body.timeZone : 'UTC';
+    const pdf = await makeCertificatePdf(validation.name, quizLocale(body.locale), new Date(), timeZone);
+    response.writeHead(200, { 'content-type': 'application/pdf', 'content-length': pdf.length, 'content-disposition': 'attachment; filename="godot-forge-certificate.pdf"', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
+    response.end(pdf);
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/modules") {
     const learnerId = String(url.searchParams.get("learnerId") || "");
     if (learnerId && !validLearnerId(learnerId)) return sendJson(response, 400, { error: "A valid learner is required." });
@@ -1605,6 +1651,30 @@ async function handleApi(request, response, url) {
       { module_slug: moduleSlug, locale: quizLocale(url.searchParams.get('locale')) },
     );
     return sendJson(response, 200, questions.map(question => ({ id: question.id, category: question.category, question: question.question, options: JSON.parse(question.optionsJson) })));
+  }
+
+  if (url.pathname === '/api/quizzes/math-stem-physics-quiz/answer-sheet' && request.method === 'POST') {
+    const body = await readJson(request);
+    if (!resetPasscodeDigest) return sendJson(response, 503, { error: 'The reset passcode is not configured on the server.' });
+    if (typeof body.passcode !== 'string' || body.passcode.length > 128 || !timingSafeEqual(createHash('sha256').update(body.passcode, 'utf8').digest(), resetPasscodeDigest)) {
+      return sendJson(response, 403, { error: 'Incorrect reset passcode.' });
+    }
+    const locale = quizLocale(body.locale);
+    const rows = await queryRows(
+      `SELECT q.id, COALESCE(t.category, q.category) AS category,
+              COALESCE(t.question, q.question) AS question,
+              COALESCE(t.options_json, q.options_json) AS optionsJson,
+              q.correct_option AS correctOption, COALESCE(t.explanation, q.explanation) AS explanation,
+              q.source_url AS sourceUrl
+       FROM quiz_questions q
+       LEFT JOIN quiz_question_translations t ON t.question_id = q.id AND t.locale = $locale
+       WHERE q.module_slug = 'math-stem-physics-quiz' ORDER BY q.position`,
+      { locale },
+    );
+    const pdf = await makeQuizAnswerPdf(rows.map(row => ({ ...row, correctOption: Number(row.correctOption), options: JSON.parse(row.optionsJson) })), locale, body.passcode);
+    response.writeHead(200, { 'content-type': 'application/pdf', 'content-length': pdf.length, 'content-disposition': `attachment; filename="godot-forge-quiz-answers-${locale}.pdf"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
+    response.end(pdf);
+    return;
   }
 
   const quizAnswerMatch = url.pathname.match(/^\/api\/quizzes\/([^/]+)\/answer$/);
