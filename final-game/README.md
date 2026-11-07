@@ -72,3 +72,9 @@ To make the exported game open full screen, set **Project â†’ Project Settings â
 ### Menu, HUD, and exit
 
 The sample launch and pause menus offer play/resume, multiplayer, controls and quit. Multiplayer starts a new run and needs a shared reachable relay; the local default reaches only a relay on the same computer. The compact HUD shows coins, score, health and the room status. The exit completes the level as soon as a living active player reaches it; coins and enemies are optional.
+
+### Enemy hit feedback and export names
+
+A hit flashes the enemy red, knocks it away from the attacker and displays the damage amount above it. Defeated enemies remain for the brief final flash, and the multiplayer guest receives the same feedback. The local sample exports are named `tsg-game-macos.app` and `tsg-game-windows.exe`.
+
+The module starts with a seven-second GIF recorded from the example game. Its pause control switches to a still poster and respects reduced-motion preferences. The preview files are included with the site so they also load in the deployed app.

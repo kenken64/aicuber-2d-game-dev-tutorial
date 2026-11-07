@@ -211,8 +211,10 @@ window.finalGameFunctionDetails = {
       ['if health_points <= 0:', 'Only run loot and defeat logic when health reaches zero.'],
       ['if not boss and loot_scene:', 'Regular enemies may scatter one to three coin pickups; bosses skip loot.'],
       ['Game.defeat_enemy(boss)', 'Add the appropriate score and unlock boss progress if this was the boss.'],
-      ['queue_free()', 'Remove the defeated enemy from the scene.']
-    ]
+      ['_set_hit_flash(true)', 'Flash red and show the actual damage while applying directional knockback.']
+    ],
+    _set_hit_flash: [['sprite.self_modulate =', 'Tint the sprite red briefly, then restore its original color.']],
+    _show_damage_number: [['number.text = str(amount)', 'Show the damage amount above the enemy and animate it upwards before removing it.']]
   },
   'scripts/AdventureMenu.gd': {
     _ready: [["process_mode = Node.PROCESS_MODE_ALWAYS", "Build the menu and show it at startup or hide it until gameplay is paused."]],
@@ -366,7 +368,8 @@ window.finalGameFunctionDetails = {
       ['if not is_instance_valid(actor):', 'Skip an actor node that has already been freed.'],
       ['if data.is_empty():', 'Remove an enemy or boss absent from the host snapshot.'],
       ['actor.global_position = Vector2(float(data.get("x", 0)), float(data.get("y", 0)))', 'Copy the host position.'],
-      ['actor.health_points = int(data.get("hp", 1))', 'Copy the host health for the next visible frame.']
+      ['actor._show_damage_number(actor.health_points - hp)', 'Show the damage amount when the host reports a health reduction.'],
+      ['actor._set_hit_flash(bool(data.get("hit_flash", false)))', 'Mirror the host’s red flash on the guest.']
     ]
   }
 };

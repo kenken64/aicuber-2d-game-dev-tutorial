@@ -99,7 +99,7 @@ func _actor(actor) -> Dictionary:
     if not is_instance_valid(actor):
         return {}
     return {"x": actor.global_position.x, "y": actor.global_position.y,
-        "hp": actor.health_points}
+        "hp": actor.health_points, "hit_flash": actor.hit_flash_time > 0.0}
 
 func _actors(parent_name: String) -> Dictionary:
     var result := {}
@@ -250,4 +250,9 @@ func _sync_actor(actor, data: Dictionary) -> void:
         actor.queue_free()
         return
     actor.global_position = Vector2(float(data.get("x", 0)), float(data.get("y", 0)))
-    actor.health_points = int(data.get("hp", 1))
+    var hp := int(data.get("hp", 1))
+    if actor.has_meta("received_health") and hp < actor.health_points:
+        actor._show_damage_number(actor.health_points - hp)
+    actor.set_meta("received_health", true)
+    actor.health_points = hp
+    actor._set_hit_flash(bool(data.get("hit_flash", false)))

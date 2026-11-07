@@ -246,7 +246,7 @@ func _physics_process(delta: float) -> void:
         for target in get_tree().get_nodes_in_group("damageable"):
             var gap = target.global_position - global_position
             if absf(gap.x) < 75.0 and absf(gap.y) < 55.0 and gap.x * facing > -10.0:
-                target.hit(1 + Game.attack_bonus)
+                target.hit(1 + Game.attack_bonus, global_position.x)
     move_and_slide()
     var animation = "jump" if not is_on_floor() else ("run" if absf(axis) > 0.1 else "idle")
     if crouching and sprite.sprite_frames and sprite.sprite_frames.has_animation("crouch"):
@@ -506,9 +506,10 @@ func _ready() -> void:
   },
   {
     id:'combat',title:'5. Build enemy AI and a boss phase',modules:'3 Boss · 7 Enemies and AI · 8 Game loop',
-    summary:'Reuse one enemy script for two ordinary types and the boss. The boss changes speed below half health. The exit can be reached independently of the combat encounters.',
+    summary:'Reuse one enemy script for two ordinary types and the boss. Enemies flash red, bounce away and show floating damage numbers when hit; the boss reacts with reduced knockback and speeds up below half health. The exit remains independent of combat.',
     steps:[
       'Attach Enemy.gd to Enemy.tscn. Set patrol_left and patrol_right for each instance in the Inspector; these are offsets from its starting point. Use different sprite frames and speeds for the two normal types.',
+      'Set knockback_speed and hit_bounce in the enemy Inspector to tune the hit response. Each sword hit flashes the enemy red, moves it away from the attacker and floats the actual damage number above it; the boss uses a smaller reaction. A defeated enemy remains briefly visible for the final flash.',
       'Set boss=On and health_points=8 on the Boss instance. Add an arena floor that keeps the fight readable. Adjust attack_range so the boss can reach a player without instantly overlapping them. Assign scenes/Pickup.tscn to loot_scene on each regular enemy.',
       'The player attack calls hit() on nearby nodes in the damageable group. Enemies add themselves to that group automatically. Keep their collision masks aligned with Terrain and Player.'
     ],
@@ -521,18 +522,40 @@ func _ready() -> void:
 @export var patrol_right := 90.0
 @export var attack_range := 65.0
 @export var loot_scene: PackedScene
+@export var knockback_speed := 230.0
+@export var hit_bounce := 115.0
 var origin_x := 0.0
 var direction := 1.0
 var attack_wait := 0.0
+var hit_flash_time := 0.0
+var knockback_time := 0.0
+var knockback_velocity := 0.0
+var defeated := false
+var base_tint := Color.WHITE
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 func _ready() -> void:
     add_to_group("damageable")
     origin_x = global_position.x
+    base_tint = sprite.self_modulate
 
 func _physics_process(delta: float) -> void:
     attack_wait = maxf(0.0, attack_wait - delta)
+    hit_flash_time = maxf(0.0, hit_flash_time - delta)
+    _set_hit_flash(hit_flash_time > 0.0)
+    if defeated and hit_flash_time <= 0.0:
+        queue_free()
+        return
     velocity.y += 1100.0 * delta if not is_on_floor() else 0.0
+    if knockback_time > 0.0:
+        knockback_time = maxf(0.0, knockback_time - delta)
+        velocity.x = knockback_velocity
+        move_and_slide()
+        return
+    if defeated:
+        velocity.x = 0.0
+        move_and_slide()
+        return
     var target = null
     var closest := 320.0 if boss else 190.0
     for hero in get_tree().get_nodes_in_group("heroes"):
@@ -558,9 +581,23 @@ func _physics_process(delta: float) -> void:
         target.hurt()
         attack_wait = 1.0 if boss else 1.4
 
-func hit(amount: int = 1) -> void:
+func hit(amount: int = 1, attacker_x: float = INF) -> void:
+    if defeated or amount <= 0:
+        return
     health_points -= amount
+    hit_flash_time = 0.24
+    knockback_time = 0.20
+    var away := signf(global_position.x - attacker_x) if is_finite(attacker_x) else -direction
+    if is_zero_approx(away):
+        away = -direction
+    knockback_velocity = away * knockback_speed * (0.45 if boss else 1.0)
+    velocity.y = -hit_bounce * (0.6 if boss else 1.0)
+    _set_hit_flash(true)
+    _show_damage_number(amount)
     if health_points <= 0:
+        defeated = true
+        remove_from_group("damageable")
+        $CollisionShape2D.set_deferred("disabled", true)
         if not boss and loot_scene:
             var container = get_tree().get_first_node_in_group("loot_container")
             if container:
@@ -571,8 +608,29 @@ func hit(amount: int = 1) -> void:
                     container.add_child(loot)
                     loot.global_position = global_position + Vector2(randf_range(-24, 24), -20)
         Game.defeat_enemy(boss)
-        queue_free()`}],
-    check:'Each enemy patrols, chases, and deals damage when it reaches a player. Set attack_range larger than the combined collision half-widths: the default is 65 pixels, but adjust it to fit your shapes. Confirm the hurt animation and health bar change. The boss speeds up after four hits and sets Game.boss_defeated to true. Enemy loot appears after Main joins BonusPickups to the loot_container group in Section 6.'
+
+func _set_hit_flash(active: bool) -> void:
+    sprite.self_modulate = base_tint * Color(1.0, 0.18, 0.18) if active else base_tint
+
+func _show_damage_number(amount: int) -> void:
+    var number := Label.new()
+    number.name = "DamageNumber"
+    number.text = str(amount)
+    number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    number.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    number.size = Vector2(100, 42)
+    number.z_index = 100
+    number.add_theme_font_size_override("font_size", 30)
+    number.add_theme_color_override("font_color", Color("fff0b0"))
+    number.add_theme_color_override("font_outline_color", Color("512118"))
+    number.add_theme_constant_override("outline_size", 5)
+    get_tree().current_scene.add_child(number)
+    number.global_position = global_position + Vector2(-50, -150)
+    var animation := number.create_tween().set_parallel(true)
+    animation.tween_property(number, "position:y", number.position.y - 55.0, 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+    animation.tween_property(number, "modulate:a", 0.0, 0.35).set_delay(0.4)
+    animation.chain().tween_callback(number.queue_free)`}],
+    check:'Each enemy patrols, chases, and deals damage when it reaches a player. Set attack_range larger than the combined collision half-widths: the default is 65 pixels, but adjust it to fit your shapes. Confirm the player hurt animation and health bar change, and that each enemy hit flashes red, recoils away from the attacker and shows the damage number. The boss speeds up after four hits and sets Game.boss_defeated to true. Enemy loot appears after Main joins BonusPickups to the loot_container group in Section 6.'
   },
   {
     id:'interface',title:'6. Connect the HUD, shop, settings, and local co-op',modules:'8 Game loop · 10 Settings · 14 Marketplace · 15 Achievements · 16 Leaderboard · 17 Local co-op',
@@ -1353,6 +1411,8 @@ func _setup_finale() -> void:
         button.add_theme_font_size_override("font_size", 18)
         button.add_theme_color_override("font_color", Color("1a2c20") if primary else Color("edf1df"))
         button.add_theme_color_override("font_hover_color", Color("1a2c20") if primary else Color.WHITE)
+        button.add_theme_color_override("font_focus_color", Color("1a2c20") if primary else Color("edf1df"))
+        button.add_theme_color_override("font_pressed_color", Color("1a2c20") if primary else Color.WHITE)
         button.add_theme_stylebox_override("normal", _finale_box(Color("e5c86e") if primary else Color("203b30"), Color("e5c86e") if primary else Color("668671"), 1, 10))
         button.add_theme_stylebox_override("hover", _finale_box(Color("f4dc8f") if primary else Color("315a44"), Color("f7e3a0"), 2, 10))
         button.add_theme_stylebox_override("pressed", _finale_box(Color("c6a84f") if primary else Color("142b23"), Color("f7e3a0"), 2, 10))
@@ -1480,7 +1540,7 @@ func join_room(_room_code: String) -> void:
       'Clear the temporary contents of scripts/Online.gd, then rebuild that same file through the writing tasks below. The shown relay_url uses this page’s WebSocket address; for a local HTTP page it uses 127.0.0.1 instead of localhost to avoid IPv6-only connection failures on some Godot setups. If this page uses localhost, replace it with the public site’s WebSocket URL before running Godot in a cloud workspace; localhost inside the cloud editor points to that server, not your Mac.',
       'Open two independent Godot workspaces or two running copies of the project. Choose Multiplayer in the menu and use the same reachable relay address on both. Host in one copy and read its six-character room code in the HUD; enter that code on the second copy and choose Join. The default 127.0.0.1 address works only when the relay and game run on the same computer.',
       'On the guest copy, use P1 keyboard controls or the first connected gamepad to control the host’s Player2. The host owns coins, timed item spawns, enemy drops, boss, shop, score, and ending state. The guest receives snapshots of the world; leaderboard records and achievements save in the host’s workspace.',
-      'Test a coin pickup, one enemy hit, a purchase, the boss defeat, and the exit while both copies are connected. Use a fresh code after a host disconnects.'
+      'Test a coin pickup, an enemy hit and its red flash and damage number on both screens, a purchase, the boss defeat, and the exit while both copies are connected. Use a fresh code after a host disconnects.'
     ],
     files:[{name:'scripts/Online.gd',code:`extends Node
 
@@ -1583,7 +1643,7 @@ func _actor(actor) -> Dictionary:
     if not is_instance_valid(actor):
         return {}
     return {"x": actor.global_position.x, "y": actor.global_position.y,
-        "hp": actor.health_points}
+        "hp": actor.health_points, "hit_flash": actor.hit_flash_time > 0.0}
 
 func _actors(parent_name: String) -> Dictionary:
     var result := {}
@@ -1734,7 +1794,12 @@ func _sync_actor(actor, data: Dictionary) -> void:
         actor.queue_free()
         return
     actor.global_position = Vector2(float(data.get("x", 0)), float(data.get("y", 0)))
-    actor.health_points = int(data.get("hp", 1))`}],
+    var hp := int(data.get("hp", 1))
+    if actor.has_meta("received_health") and hp < actor.health_points:
+        actor._show_damage_number(actor.health_points - hp)
+    actor.set_meta("received_health", true)
+    actor.health_points = hp
+    actor._set_hit_flash(bool(data.get("hit_flash", false)))`}],
     check:'Two copies show the same room code. The guest moves P2; both copies see the same positions, coins, enemy defeats, boss status, and final ending.'
   },
   {

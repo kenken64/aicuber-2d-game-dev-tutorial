@@ -57,3 +57,7 @@ final-game/dist/
 
 # Final Game starter-kit portal and shop artwork.
 !final-game/starter-project/assets/final-game/*.png
+
+# Animated Final Game preview and its reduced-motion poster.
+!final-game/media/gameplay-preview.gif
+!final-game/media/gameplay-preview-still.png

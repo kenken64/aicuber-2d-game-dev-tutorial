@@ -25,3 +25,5 @@ In Section 6, add the backdrop, panel, victory art, labels and buttons under Fin
 For the finished desktop game, Section 9 explains how to set Project Settings → Display → Window → Size → Mode to Fullscreen before exporting. The starter opens windowed so its welcome scene remains convenient to use in the editor or cloud workspace.
 
 The reference code also includes AdventureMenu.gd and a StartMenu.tscn example. Section 6 explains how to add the same menu to Main and create the launch scene. Multiplayer needs a relay reachable by both players. A living active player finishes the level by reaching the portal; collecting coins and defeating enemies are optional.
+
+Enemy hits now show the actual damage in a floating number, flash the sprite red and knock it away from the attacker; bosses recoil less. The host shares enemy health and flash state with the online guest.

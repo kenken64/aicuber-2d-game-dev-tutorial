@@ -187,6 +187,22 @@ const moduleSlugs = {
 };
 const navList = document.querySelector('#build-nav-list');
 const sections = document.querySelector('#build-sections');
+Object.assign(copy.en, { previewKicker: 'THE SLEEPING GROVE', previewTitle: 'See the game in action', previewDescription: 'A glimpse of the forest adventure you can build in Godot.', previewCaption: 'Gameplay from the example project. Your own game can look and play differently.', previewAlt: 'A forest game showing a hero fighting an enemy and reaching a glowing portal.', previewPause: 'Pause animation', previewPlay: 'Play animation' });
+Object.assign(copy.zh, { previewKicker: '沉睡的森林', previewTitle: '看看游戏的实际画面', previewDescription: '预览你可以在 Godot 中制作的森林冒险。', previewCaption: '示例项目的游戏画面。你可以自行设计游戏的外观和玩法。', previewAlt: '森林游戏中的英雄与敌人战斗，并走向发光的传送门。', previewPause: '暂停动画', previewPlay: '播放动画' });
+Object.assign(copy.ms, { previewKicker: 'RIMBA YANG TIDUR', previewTitle: 'Lihat permainan beraksi', previewDescription: 'Sekilas pandang pengembaraan hutan yang boleh anda bina dalam Godot.', previewCaption: 'Rakaman permainan contoh. Rupa dan cara permainan anda boleh berbeza.', previewAlt: 'Permainan hutan yang menunjukkan wira melawan musuh dan menuju ke portal bercahaya.', previewPause: 'Jeda animasi', previewPlay: 'Mainkan animasi' });
+const previewImage = document.querySelector('#game-preview-image');
+const previewToggle = document.querySelector('#game-preview-toggle');
+const previewMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let previewPlaying = !previewMotion.matches;
+function updatePreview() {
+  const source = previewPlaying ? previewImage.dataset.animatedSrc : previewImage.dataset.stillSrc;
+  if (previewImage.getAttribute('src') !== source) previewImage.setAttribute('src', source);
+  previewImage.alt = copy[currentLocale].previewAlt;
+  previewToggle.textContent = previewPlaying ? copy[currentLocale].previewPause : copy[currentLocale].previewPlay;
+}
+previewToggle.addEventListener('click', () => { previewPlaying = !previewPlaying; updatePreview(); });
+previewMotion.addEventListener('change', event => { if (event.matches) { previewPlaying = false; updatePreview(); } });
+
 const savedAssets = document.querySelector('#saved-assets');
 let currentLocale = 'en';
 
@@ -543,6 +559,7 @@ function applyLocale(locale) {
   document.querySelectorAll('[data-copy]').forEach(element => { element.textContent = copy[locale][element.dataset.copy] || ''; });
   document.querySelectorAll('[data-aria-label]').forEach(element => { element.setAttribute('aria-label', copy[locale][element.dataset.ariaLabel]); });
   document.querySelectorAll('[data-locale]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.locale === locale)));
+  updatePreview();
   document.title = `${copy[locale].title} · Godot Forge`;
   document.querySelector('#guide-language-note').hidden = locale === 'en';
   renderGuide();

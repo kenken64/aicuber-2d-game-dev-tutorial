@@ -163,12 +163,16 @@ window.finalGameWalkthrough = {
     flow: [
       'At startup, the enemy joins damageable and remembers its patrol center.',
       'Each physics tick it finds the nearest active hero. It chases within range, otherwise patrols between its offsets; the boss speeds up below half health.',
-      'When close enough it hurts the hero with a cooldown. hit removes health; defeated normal enemies drop coins, while a boss defeat updates Game.'
+      'When close enough it hurts the hero with a cooldown. A sword hit knocks the enemy away, flashes it red and floats the damage number; defeated enemies drop loot or update boss progress.'
     ],
     symbols: {
       _ready: 'Registers this enemy as damageable and saves its starting X position.',
       _physics_process: 'Chooses a hero or patrol direction, moves, animates, and attacks when in range.',
-      hit: 'Receives damage from Player.gd. On defeat it drops loot, updates score, and removes the enemy.',
+      hit: 'Receives damage and the attacker position, flashes red, knocks the enemy back, and shows the damage amount. A defeat awards loot or score once and removes the enemy after the flash.',
+      _set_hit_flash: 'Tints the sprite red for a moment and restores its normal color.',
+      _show_damage_number: 'Creates a temporary floating number for the actual damage.',
+      knockback_speed: 'Horizontal recoil speed; bosses use a smaller fraction.',
+      hit_bounce: 'Upward recoil speed after a hit.',
       boss: 'Inspector switch for boss detection radius, faster second phase, and boss defeat progress.',
       health_points: 'Enemy hit points. The boss phase begins at four or fewer.',
       patrol_left: 'Left patrol limit measured relative to origin_x.',

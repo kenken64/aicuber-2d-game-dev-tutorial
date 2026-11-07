@@ -40,6 +40,25 @@ try {
     await page.goto(`${baseUrl}/final-game/#player`);
     await page.waitForFunction(() => !document.documentElement.hasAttribute('data-module-gated'));
     await page.locator('#player .writing-stepper').waitFor();
+    const preview = page.locator('#game-preview-image');
+    const previewToggle = page.locator('#game-preview-toggle');
+    assert.equal((await page.request.get(`${baseUrl}/final-game/media/gameplay-preview.gif`)).status(), 200);
+    assert.equal((await page.request.get(`${baseUrl}/final-game/media/gameplay-preview-still.png`)).status(), 200);
+    await page.waitForFunction(() => document.querySelector('#game-preview-image').naturalWidth > 0);
+    assert.match(await preview.getAttribute('src'), /gameplay-preview\.gif$/);
+    await previewToggle.click();
+    assert.match(await preview.getAttribute('src'), /gameplay-preview-still\.png$/);
+    assert.match(await previewToggle.textContent(), /Play animation/);
+    await previewToggle.click();
+    assert.match(await preview.getAttribute('src'), /gameplay-preview\.gif$/);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.waitForFunction(() => document.querySelector('#game-preview-image').getAttribute('src').endsWith('gameplay-preview-still.png'));
+    assert.match(await preview.getAttribute('src'), /gameplay-preview-still\.png$/);
+    assert.match(await previewToggle.textContent(), /Play animation/);
+    await page.reload();
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-module-gated'));
+    assert.match(await preview.getAttribute('src'), /gameplay-preview-still\.png$/);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     assert.match(await page.locator('#local-editor-title').textContent(), /computer/i);
     assert.match(await page.locator('#cloud-editor-title').textContent(), /cloud/i);
     assert.match(await page.locator('[data-copy="localStepTwo"]').textContent(), /Import.*project\.godot/);
@@ -112,7 +131,8 @@ try {
     assert.match(await page.locator('#plan .step-code').textContent(), /var attack_bonus := 0/);
     assert.ok((await page.locator('#plan .step-code').textContent()).length < 70);
 
-    for (let index = 0; index < 3; index++) await page.locator('#combat .writing-done').click();
+    const combatSetupCount = await page.evaluate(() => window.finalGameGuide.find(section => section.id === 'combat').steps.length);
+    for (let index = 0; index < combatSetupCount; index++) await page.locator('#combat .writing-done').click();
     assert.equal(await page.locator('#combat .step-code').count(), 0);
     assert.match(await page.locator('#combat .step-outline').textContent(), /____/);
     await page.locator('#combat .writing-help').click();
@@ -135,6 +155,7 @@ try {
     assert.ok(await page.locator('#player .file-reference').first().locator('.function-steps li').count() > 4);
 
     await page.click('[data-locale="zh"]');
+    assert.match(await previewToggle.textContent(), /暂停动画|播放动画/);
     assert.match(await page.locator('#local-editor-title').textContent(), /本机/);
     assert.match(await page.locator('#cloud-editor-title').textContent(), /云端/);
     await page.locator('#player .file-reference').first().locator('summary').click();
