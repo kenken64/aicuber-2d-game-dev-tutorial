@@ -187,6 +187,7 @@ window.finalGameWalkthrough = {
     flow: [
       '_ready configures the level, HUD buttons, the shop and exit, and controller assignments.',
       '_process opens the pause menu, handles restart, local co-op, shop healing, and game-over checks, then refreshes the compact HUD.',
+      'Sound is configured on its own menu page and saved independently from control bindings.',
       'The HUD health bars follow each player. On defeat Main waits briefly for the death animation before showing game over.',
       'Any living active player can enter the exit to open the ending choice; collecting coins and defeating enemies are optional. _choose saves the result and animates the credits.'
     ],
@@ -201,7 +202,6 @@ window.finalGameWalkthrough = {
       _on_exit: 'Starts the finale as soon as a living active player reaches the portal.',
       _show_result: 'Displays the finale panel and shows or hides the ending choice buttons.',
       _choose: 'Commits Keep or Return to Game and animates the result and credits.',
-      _volume_changed: 'Turns the slider value into a decibel level on Godot’s main audio bus.',
       _restart: 'Unpauses and reloads the level scene for a fresh run.',
       GamepadBindings: 'The helper script that connects specific controller devices to P1 and P2 Input Map actions.',
       p1: 'Reference to the Player1 scene instance.',

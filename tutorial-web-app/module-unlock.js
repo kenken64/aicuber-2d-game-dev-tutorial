@@ -16,9 +16,9 @@
   `;
   document.head.append(style);
   const labels = {
-    en: { checking: 'Checking your progress…', title: 'Finish the earlier modules first', body: 'Complete modules 1–19 to unlock modules 20–22.', progress: n => `${n} of 19 modules completed.`, error: 'Could not check your progress. Please try again.', back: '← LEARNING PATH', retry: 'CHECK AGAIN' },
-    zh: { checking: '正在检查学习进度…', title: '请先完成前面的模块', body: '完成第 1–19 个模块后，即可解锁第 20–22 个模块。', progress: n => `已完成 ${n} / 19 个模块。`, error: '无法检查学习进度，请重试。', back: '← 学习路径', retry: '重新检查' },
-    ms: { checking: 'Menyemak kemajuan anda…', title: 'Selesaikan modul terdahulu dahulu', body: 'Lengkapkan modul 1–19 untuk membuka modul 20–22.', progress: n => `${n} daripada 19 modul telah selesai.`, error: 'Kemajuan tidak dapat disemak. Sila cuba lagi.', back: '← LALUAN PEMBELAJARAN', retry: 'SEMAK SEMULA' },
+    en: { checking: 'Checking your progress…', title: 'Finish the earlier modules first', body: 'Complete modules 1–20 to unlock modules 21–23.', progress: n => `${n} of 20 modules completed.`, error: 'Could not check your progress. Please try again.', back: '← LEARNING PATH', retry: 'CHECK AGAIN' },
+    zh: { checking: '正在检查学习进度…', title: '请先完成前面的模块', body: '完成第 1–20 个模块后，即可解锁第 21–23 个模块。', progress: n => `已完成 ${n} / 20 个模块。`, error: '无法检查学习进度，请重试。', back: '← 学习路径', retry: '重新检查' },
+    ms: { checking: 'Menyemak kemajuan anda…', title: 'Selesaikan modul terdahulu dahulu', body: 'Lengkapkan modul 1–20 untuk membuka modul 21–23.', progress: n => `${n} daripada 20 modul telah selesai.`, error: 'Kemajuan tidak dapat disemak. Sila cuba lagi.', back: '← LALUAN PEMBELAJARAN', retry: 'SEMAK SEMULA' },
   };
   const locale = localStorage.getItem('godot-forge-locale');
   const text = labels[locale] || labels.en;
@@ -44,10 +44,10 @@
       const response = await fetch(`/api/modules?learnerId=${encodeURIComponent(learnerId)}`, { cache: 'no-store' });
       if (!response.ok) throw new Error('Progress unavailable');
       const modules = await response.json();
-      const required = modules.filter(module => Number(module.level) >= 1 && Number(module.level) <= 19);
+      const required = modules.filter(module => Number(module.level) >= 1 && Number(module.level) <= 20);
       const count = required.filter(module => module.completed).length;
       await ready;
-      if (required.length === 19 && count === 19) {
+      if (required.length === 20 && count === 20) {
         root.removeAttribute('data-module-gated'); gate.remove(); style.remove();
       } else {
         heading.textContent = text.title; description.textContent = text.body; progress.textContent = text.progress(count);

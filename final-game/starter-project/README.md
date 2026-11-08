@@ -10,7 +10,7 @@ The cloud editor saves your project on the server while the workspace exists. Us
 
 The starter includes a repeating grass-and-soil ground texture plus transparent forest portal and shop art in `assets/final-game/`. For the ground, set a Sprite2D region wider than the texture, turn texture repeat on, and keep a separate solid collision shape. In Section 2, add each as a Sprite2D under the Exit or Shop Area2D, scale its base to the ground, and size the Area2D collision shape for player interaction.
 
-Section 6 adds a Controls button and a ControlsMenu node for keyboard and gamepad remapping. The optional `reference-code/*.gd.txt` files contain the matching complete example scripts; follow the guide to create actual `.gd` scripts and scene nodes, or consult these text references while writing. Bindings are saved in `user://controls.cfg` on the device running the game. Escape cancels input capture; Close / Resume exits the menu. The default controls and player assignment are described in the guide.
+Section 6 adds a Controls button and a ControlsMenu node for keyboard and gamepad remapping. The optional `reference-code/*.gd.txt` files contain the matching complete example scripts; follow the guide to create actual `.gd` scripts and scene nodes, or consult these text references while writing. Bindings are saved in `user://controls.cfg` on the device running the game. Escape cancels input capture; Back returns to the menu. The default controls and player assignment are described in the guide.
 
 For combat, make the enemy attack range larger than the combined player/enemy collision half-widths; the example uses 65 pixels. Section 6 adds health bars, and the player SpriteFrames should include non-looping `hurt` and `death` animations when available. Main waits briefly before displaying game over so the death animation is visible. The online reference includes animation and game-over synchronization; its loopback relay address is only for a server running on the same computer.
 
@@ -27,3 +27,5 @@ For the finished desktop game, Section 9 explains how to set Project Settings â†
 The reference code also includes AdventureMenu.gd and a StartMenu.tscn example. Section 6 explains how to add the same menu to Main and create the launch scene. Multiplayer needs a relay reachable by both players. A living active player finishes the level by reaching the portal; collecting coins and defeating enemies are optional.
 
 Enemy hits now show the actual damage in a floating number, flash the sprite red and knock it away from the attacker; bosses recoil less. The host shares enemy health and flash state with the online guest.
+
+The Sound menu contains the master volume, an on/off toggle and a test cue. Preferences are saved in `user://audio.cfg`, separate from control bindings. Short synthesized gameplay cues use the Master bus.

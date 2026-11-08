@@ -17,6 +17,7 @@ const moduleOrder = [
   "game-controls",
   "game-settings",
   "game-physics",
+  "sound-engine",
   "game-ending-cutscene",
   "credits",
   "marketplace-system",
@@ -42,6 +43,7 @@ const moduleIcons = {
   "game-controls": "⊞",
   "game-settings": "⚙",
   "game-physics": "∿",
+  "sound-engine": "♫",
   "game-ending-cutscene": "◒",
   credits: "✧",
   "marketplace-system": "¤",
@@ -158,7 +160,7 @@ const interfaceCopy = {
     heroDescription: "Follow the path from your first game asset to a complete 2D adventure. Every module is a focused building block for the final game.",
     startBuilding: "Start building",
     learningPathEyebrow: "The learning path",
-    learningPathTitle: "Twenty-one steps to a living game.",
+    learningPathTitle: "Twenty-three steps to a living game.",
     findModule: "Find a module",
     playerLabel: "PLAYER_01",
     readyToBuild: "READY TO BUILD",
@@ -175,14 +177,14 @@ const interfaceCopy = {
     markDone: "MARK DONE",
     reopen: "REOPEN",
     locked: "LOCKED",
-    unlockRequirement: "Complete modules 1–19 to unlock.",
+    unlockRequirement: "Complete modules 1–20 to unlock.",
     quizRequirement: "PASS QUIZ TO COMPLETE",
     quizPassed: "QUIZ PASSED",
     reset: "RESET MODULE",
     emptyState: "No modules match that search.",
     loadError: "Unable to load tutorial modules. Start the app with npm start.",
     progress: (complete, total) => `${complete} of ${total} modules complete`,
-    tags: { PLAYER: "PLAYER", FOUNDATION: "FOUNDATION", WORLD: "WORLD", CORE: "CORE", SYSTEM: "SYSTEM", CHALLENGE: "CHALLENGE", STORY: "STORY", "SHIP IT": "SHIP IT", "CO-OP": "CO-OP", NETWORKING: "NETWORKING" },
+    tags: { AUDIO: "AUDIO", PLAYER: "PLAYER", FOUNDATION: "FOUNDATION", WORLD: "WORLD", CORE: "CORE", SYSTEM: "SYSTEM", CHALLENGE: "CHALLENGE", STORY: "STORY", "SHIP IT": "SHIP IT", "CO-OP": "CO-OP", NETWORKING: "NETWORKING" },
   },
   zh: {
     pageTitle: "Godot Forge — 2D 游戏开发",
@@ -211,7 +213,7 @@ const interfaceCopy = {
     heroDescription: "从第一个游戏资产开始，逐步构建一场完整的 2D 冒险。每个模块都是最终游戏的重要组成部分。",
     startBuilding: "开始构建",
     learningPathEyebrow: "学习路径",
-    learningPathTitle: "让游戏世界活起来的二十一步。",
+    learningPathTitle: "让游戏世界活起来的二十三步。",
     findModule: "查找模块",
     playerLabel: "玩家_01",
     readyToBuild: "准备构建",
@@ -228,14 +230,14 @@ const interfaceCopy = {
     markDone: "标记完成",
     reopen: "重新打开",
     locked: "未解锁",
-    unlockRequirement: "完成第 1–19 个模块后解锁。",
+    unlockRequirement: "完成第 1–20 个模块后解锁。",
     quizRequirement: "通过测验后完成",
     quizPassed: "测验已通过",
     reset: "重置模块",
     emptyState: "没有匹配的模块。",
     loadError: "无法加载教程模块。请使用 npm start 启动应用。",
     progress: (complete, total) => `${complete} / ${total} 个模块已完成`,
-    tags: { PLAYER: "玩家", FOUNDATION: "基础", WORLD: "世界", CORE: "核心", SYSTEM: "系统", CHALLENGE: "挑战", STORY: "故事", "SHIP IT": "发布", "CO-OP": "合作", NETWORKING: "联网" },
+    tags: { AUDIO: "声音", PLAYER: "玩家", FOUNDATION: "基础", WORLD: "世界", CORE: "核心", SYSTEM: "系统", CHALLENGE: "挑战", STORY: "故事", "SHIP IT": "发布", "CO-OP": "合作", NETWORKING: "联网" },
   },
   ms: {
     pageTitle: "Godot Forge — Pembangunan Permainan 2D",
@@ -264,7 +266,7 @@ const interfaceCopy = {
     heroDescription: "Ikuti laluan daripada aset permainan pertama hingga pengembaraan 2D yang lengkap. Setiap modul ialah blok binaan penting untuk permainan akhir.",
     startBuilding: "Mula membina",
     learningPathEyebrow: "Laluan pembelajaran",
-    learningPathTitle: "Dua puluh satu langkah untuk menghidupkan permainan.",
+    learningPathTitle: "Dua puluh tiga langkah untuk menghidupkan permainan.",
     findModule: "Cari modul",
     playerLabel: "PEMAIN_01",
     readyToBuild: "SEDIA UNTUK MEMBINA",
@@ -281,14 +283,14 @@ const interfaceCopy = {
     markDone: "TANDA SELESAI",
     reopen: "BUKA SEMULA",
     locked: "TERKUNCI",
-    unlockRequirement: "Lengkapkan modul 1–19 untuk membuka.",
+    unlockRequirement: "Lengkapkan modul 1–20 untuk membuka.",
     quizRequirement: "LULUS KUIZ UNTUK SELESAI",
     quizPassed: "KUIZ LULUS",
     reset: "SET SEMULA MODUL",
     emptyState: "Tiada modul yang sepadan dengan carian itu.",
     loadError: "Modul tutorial tidak dapat dimuatkan. Mulakan aplikasi dengan npm start.",
     progress: (complete, total) => `${complete} daripada ${total} modul selesai`,
-    tags: { PLAYER: "PEMAIN", FOUNDATION: "ASAS", WORLD: "DUNIA", CORE: "TERAS", SYSTEM: "SISTEM", CHALLENGE: "CABARAN", STORY: "CERITA", "SHIP IT": "TERBITKAN", "CO-OP": "KOPERATIF", NETWORKING: "RANGKAIAN" },
+    tags: { AUDIO: "AUDIO", PLAYER: "PEMAIN", FOUNDATION: "ASAS", WORLD: "DUNIA", CORE: "TERAS", SYSTEM: "SISTEM", CHALLENGE: "CABARAN", STORY: "CERITA", "SHIP IT": "TERBITKAN", "CO-OP": "KOPERATIF", NETWORKING: "RANGKAIAN" },
   },
 };
 
@@ -307,9 +309,9 @@ Object.assign(interfaceCopy.ms.tags, { GODOT: "GODOT" });
 Object.assign(interfaceCopy.ms.tags, { AI: "AI" });
 
 const certificateCopy = {
-  en: { eyebrow: 'YOUR ACHIEVEMENT', title: 'Certificate of completion', button: 'DOWNLOAD CERTIFICATE', progress: count => `Complete all 22 modules to unlock your certificate, including the bonus module. ${count} / 22 complete.`, ready: 'All 22 modules complete. Ask your instructor to approve your certificate.', authTitle: 'Instructor approval', authDescription: 'Ask your instructor to enter the module reset passcode.', passcode: 'Instructor passcode', continue: 'CONTINUE', cancel: 'CANCEL', nameTitle: 'Your certificate', nameDescription: 'Enter your name as it should appear on your certificate.', name: 'Student name', download: 'DOWNLOAD PDF', wrong: 'Incorrect passcode. Please try again.', unavailable: 'The reset passcode is not configured on the server. Contact the administrator.', incomplete: 'Complete all 22 modules before downloading a certificate.', expired: 'Instructor approval expired. Please enter the passcode again.', invalidName: 'Enter a name of up to 80 characters on one line.', unsupportedName: 'Some characters cannot be printed together. Please try a supported spelling or contact your instructor.', failed: 'Could not create the certificate. Please try again.' },
-  zh: { eyebrow: '你的成就', title: '课程完成证书', button: '下载证书', progress: count => `完成全部 22 个模块（包括奖励模块）即可解锁证书。已完成 ${count} / 22。`, ready: '已完成全部 22 个模块，请老师批准你的证书。', authTitle: '老师批准', authDescription: '请老师输入模块重置密码。', passcode: '老师密码', continue: '继续', cancel: '取消', nameTitle: '你的证书', nameDescription: '输入证书上要显示的姓名。', name: '学生姓名', download: '下载 PDF', wrong: '密码不正确，请重试。', unavailable: '服务器尚未配置重置密码，请联系管理员。', incomplete: '请先完成全部 22 个模块。', expired: '老师的批准已过期，请重新输入密码。', invalidName: '请输入不超过 80 个字符的单行姓名。', unsupportedName: '部分字符无法一起打印，请尝试其他拼写或联系老师。', failed: '无法生成证书，请重试。' },
-  ms: { eyebrow: 'PENCAPAIAN ANDA', title: 'Sijil penyempurnaan', button: 'MUAT TURUN SIJIL', progress: count => `Lengkapkan semua 22 modul, termasuk modul bonus, untuk membuka sijil. ${count} / 22 selesai.`, ready: 'Semua 22 modul selesai. Minta pengajar meluluskan sijil anda.', authTitle: 'Kelulusan pengajar', authDescription: 'Minta pengajar memasukkan kod laluan set semula modul.', passcode: 'Kod laluan pengajar', continue: 'TERUSKAN', cancel: 'BATAL', nameTitle: 'Sijil anda', nameDescription: 'Masukkan nama seperti yang hendak dipaparkan pada sijil.', name: 'Nama pelajar', download: 'MUAT TURUN PDF', wrong: 'Kod laluan salah. Sila cuba lagi.', unavailable: 'Kod set semula belum dikonfigurasi pada pelayan. Hubungi pentadbir.', incomplete: 'Lengkapkan semua 22 modul dahulu.', expired: 'Kelulusan pengajar telah tamat. Masukkan kod laluan semula.', invalidName: 'Masukkan nama satu baris dengan maksimum 80 aksara.', unsupportedName: 'Sesetengah aksara tidak dapat dicetak bersama. Cuba ejaan yang disokong atau hubungi pengajar.', failed: 'Sijil tidak dapat dihasilkan. Sila cuba lagi.' },
+  en: { eyebrow: 'YOUR ACHIEVEMENT', title: 'Certificate of completion', button: 'DOWNLOAD CERTIFICATE', progress: count => `Complete all 23 modules to unlock your certificate, including the bonus module. ${count} / 23 complete.`, ready: 'All 23 modules complete. Ask your instructor to approve your certificate.', authTitle: 'Instructor approval', authDescription: 'Ask your instructor to enter the module reset passcode.', passcode: 'Instructor passcode', continue: 'CONTINUE', cancel: 'CANCEL', nameTitle: 'Your certificate', nameDescription: 'Enter your name as it should appear on your certificate.', name: 'Student name', download: 'DOWNLOAD PDF', wrong: 'Incorrect passcode. Please try again.', unavailable: 'The reset passcode is not configured on the server. Contact the administrator.', incomplete: 'Complete all 23 modules before downloading a certificate.', expired: 'Instructor approval expired. Please enter the passcode again.', invalidName: 'Enter a name of up to 80 characters on one line.', unsupportedName: 'Some characters cannot be printed together. Please try a supported spelling or contact your instructor.', failed: 'Could not create the certificate. Please try again.' },
+  zh: { eyebrow: '你的成就', title: '课程完成证书', button: '下载证书', progress: count => `完成全部 23 个模块（包括奖励模块）即可解锁证书。已完成 ${count} / 23。`, ready: '已完成全部 23 个模块，请老师批准你的证书。', authTitle: '老师批准', authDescription: '请老师输入模块重置密码。', passcode: '老师密码', continue: '继续', cancel: '取消', nameTitle: '你的证书', nameDescription: '输入证书上要显示的姓名。', name: '学生姓名', download: '下载 PDF', wrong: '密码不正确，请重试。', unavailable: '服务器尚未配置重置密码，请联系管理员。', incomplete: '请先完成全部 23 个模块。', expired: '老师的批准已过期，请重新输入密码。', invalidName: '请输入不超过 80 个字符的单行姓名。', unsupportedName: '部分字符无法一起打印，请尝试其他拼写或联系老师。', failed: '无法生成证书，请重试。' },
+  ms: { eyebrow: 'PENCAPAIAN ANDA', title: 'Sijil penyempurnaan', button: 'MUAT TURUN SIJIL', progress: count => `Lengkapkan semua 23 modul, termasuk modul bonus, untuk membuka sijil. ${count} / 23 selesai.`, ready: 'Semua 23 modul selesai. Minta pengajar meluluskan sijil anda.', authTitle: 'Kelulusan pengajar', authDescription: 'Minta pengajar memasukkan kod laluan set semula modul.', passcode: 'Kod laluan pengajar', continue: 'TERUSKAN', cancel: 'BATAL', nameTitle: 'Sijil anda', nameDescription: 'Masukkan nama seperti yang hendak dipaparkan pada sijil.', name: 'Nama pelajar', download: 'MUAT TURUN PDF', wrong: 'Kod laluan salah. Sila cuba lagi.', unavailable: 'Kod set semula belum dikonfigurasi pada pelayan. Hubungi pentadbir.', incomplete: 'Lengkapkan semua 23 modul dahulu.', expired: 'Kelulusan pengajar telah tamat. Masukkan kod laluan semula.', invalidName: 'Masukkan nama satu baris dengan maksimum 80 aksara.', unsupportedName: 'Sesetengah aksara tidak dapat dicetak bersama. Cuba ejaan yang disokong atau hubungi pengajar.', failed: 'Sijil tidak dapat dihasilkan. Sila cuba lagi.' },
 };
 for (const locale of supportedLocales) Object.assign(interfaceCopy[locale], { certificateEyebrow: certificateCopy[locale].eyebrow, certificateTitle: certificateCopy[locale].title, certificateButton: certificateCopy[locale].button });
 
@@ -344,12 +346,12 @@ function moduleLevel(module) {
 }
 
 function prerequisitesComplete() {
-  const prerequisites = modules.filter((module) => moduleLevel(module) <= 19);
-  return prerequisites.length === 19 && prerequisites.every((module) => completedModules.has(module.slug));
+  const prerequisites = modules.filter((module) => moduleLevel(module) <= 20);
+  return prerequisites.length === 20 && prerequisites.every((module) => completedModules.has(module.slug));
 }
 
 function moduleLocked(module) {
-  return moduleLevel(module) >= 20 && !prerequisitesComplete();
+  return moduleLevel(module) >= 21 && !prerequisitesComplete();
 }
 
 function displayedTitle(module) {
@@ -399,7 +401,7 @@ function renderNavigation() {
     .map(
       (module) => {
         const copy = moduleCopy(module);
-        const destination = ["character-creation", "game-assets-creation", "boss-creation", "storyline-engine", "parallax-tiling-map", "items-spawning", "game-loop-engine", "game-controls", "game-settings", "game-physics", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "math-stem-physics-quiz", "setup-godot-with-ai", "enemies-ai", "final-game", "microbit-gamepad"].includes(module.slug) ? modulePath(module) : `#module-${module.slug}`;
+        const destination = ["character-creation", "game-assets-creation", "boss-creation", "storyline-engine", "parallax-tiling-map", "items-spawning", "game-loop-engine", "game-controls", "game-settings", "game-physics", "sound-engine", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "math-stem-physics-quiz", "setup-godot-with-ai", "enemies-ai", "final-game", "microbit-gamepad"].includes(module.slug) ? modulePath(module) : `#module-${module.slug}`;
         const locked = moduleLocked(module);
         const content = `<span class="nav-number">${String(moduleLevel(module)).padStart(2, "0")}</span><span>${displayedTitle(module)}</span>${locked ? '<span class="nav-check" aria-hidden="true">🔒</span>' : completedModules.has(module.slug) ? '<span class="nav-check">✓</span>' : ""}`;
         return locked
@@ -428,7 +430,7 @@ function renderCards(query = "") {
             <span class="module-index">${interfaceCopy[currentLocale].chapter} ${String(moduleLevel(module)).padStart(2, "0")}</span>
             <span class="module-state">${localizeTag(module.tag)}</span>
           </div>
-          <span class="module-icon" aria-hidden="true"><span class="module-icon-fallback">${moduleIcons[module.slug] || "✦"}</span><img src="${module.slug === "microbit-gamepad" ? "/microbit-gamepad/images/joystick-bit-v2.png" : `/tutorial-web-app/images/module-icons/${module.slug}.webp`}" alt="" width="112" height="112" loading="lazy" decoding="async" /></span>
+          <span class="module-icon" aria-hidden="true"><span class="module-icon-fallback">${moduleIcons[module.slug] || "✦"}</span>${module.slug === "sound-engine" ? "" : `<img src="${module.slug === "microbit-gamepad" ? "/microbit-gamepad/images/joystick-bit-v2.png" : `/tutorial-web-app/images/module-icons/${module.slug}.webp`}" alt="" width="112" height="112" loading="lazy" decoding="async" />`}</span>
           <h3>${displayedTitle(module)}</h3>
           <p>${copy.description}</p>
           <div class="module-meta"><span>↳ ${module.durationMinutes} ${interfaceCopy[currentLocale].minutes}</span><span>● ${locked ? interfaceCopy[currentLocale].locked : complete ? interfaceCopy[currentLocale].done : interfaceCopy[currentLocale].ready}</span></div>
@@ -463,9 +465,9 @@ function renderProgress() {
   progressValue.textContent = `${percentage}%`;
   progressBar.style.width = `${percentage}%`;
   progressText.textContent = interfaceCopy[currentLocale].progress(count, modules.length);
-  const required = modules.filter(module => moduleLevel(module) >= 1 && moduleLevel(module) <= 22);
+  const required = modules.filter(module => moduleLevel(module) >= 1 && moduleLevel(module) <= 23);
   const requiredCount = required.filter(module => completedModules.has(module.slug)).length;
-  const eligible = required.length === 22 && requiredCount === 22;
+  const eligible = required.length === 23 && requiredCount === 23;
   certificateOpen.disabled = !eligible;
   document.querySelector('#certificate-status').textContent = eligible ? certificateCopy[currentLocale].ready : certificateCopy[currentLocale].progress(requiredCount);
 }

@@ -51,7 +51,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await page.addInitScript(id => localStorage.setItem('godot-forge-learner-id', id), learnerId);
   await page.goto(server.base);
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   await page.evaluate(() => localStorage.setItem('godot-forge-music', 'keep-until-reset'));
   await page.click('#module-game-settings .reset-module-button');
   assert.equal(await page.locator('#module-reset-dialog').isVisible(), true);

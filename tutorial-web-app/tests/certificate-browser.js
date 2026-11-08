@@ -44,12 +44,12 @@ try {
   assert.equal((await auth(passcode)).status, 409);
   assert.equal((await issue({ name: 'Student' })).status, 403);
   const modules = await (await fetch(`${base}/api/modules?learnerId=${learnerId}`)).json();
-  assert.equal(modules.length, 22);
+  assert.equal(modules.length, 23);
   const setProgress = (slug, completed) => fetch(`${base}/api/modules/${slug}/progress`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed }) });
-  for (const module of modules.filter(module => module.level <= 18)) assert.equal((await setProgress(module.slug, true)).status, 200);
+  for (const module of modules.filter(module => module.level <= 19)) assert.equal((await setProgress(module.slug, true)).status, 200);
   for (const question of quizQuestionBank) assert.equal((await post(base, '/api/quizzes/math-stem-physics-quiz/answer', { learnerId, questionId: question.id, option: question.correctOption })).status, 200);
   assert.equal((await setProgress('math-stem-physics-quiz', true)).status, 200);
-  for (const module of modules.filter(module => module.level === 20 || module.level === 21)) assert.equal((await setProgress(module.slug, true)).status, 200);
+  for (const module of modules.filter(module => module.level === 21 || module.level === 22)) assert.equal((await setProgress(module.slug, true)).status, 200);
   assert.equal((await auth(passcode)).status, 409, 'bonus module is required for 100%');
   assert.equal((await setProgress('microbit-gamepad', true)).status, 200);
   const authorization = await auth(passcode);
@@ -84,7 +84,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   await page.addInitScript(id => localStorage.setItem('godot-forge-learner-id', id), learnerId);
   await page.goto(base);
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   assert.equal(await page.locator('#certificate-open').isEnabled(), true);
   await page.click('#certificate-open');
   assert.equal(await page.locator('#certificate-passcode').getAttribute('type'), 'password');
@@ -111,9 +111,9 @@ try {
   assert.equal(await page.locator('#certificate-name').inputValue(), '');
   await setProgress('microbit-gamepad', false);
   await page.reload();
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   assert.equal(await page.locator('#certificate-open').isDisabled(), true);
-  assert.match(await page.locator('#certificate-status').textContent(), /21 \/ 22/);
+  assert.match(await page.locator('#certificate-status').textContent(), /22 \/ 23/);
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   console.log('PASS 100% completion, bonus requirement, instructor approval, student name, single-use authorization and certificate download');

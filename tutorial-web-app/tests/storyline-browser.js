@@ -49,7 +49,7 @@ try {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   await page.goto(baseUrl);
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   assert.equal(await page.locator('#module-nav a[href="/storyline-engine/"]').count(), 1);
   await page.goto(`${baseUrl}/storyline-engine/`);
   await page.waitForFunction(() => window.storyPreview?.usesHeroSprite && window.storyPreview?.usesBossSprite);

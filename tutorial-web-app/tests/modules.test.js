@@ -11,7 +11,7 @@ import { animationRows } from '../../character-creation/locomotion.mjs';
 import { quizQuestionBank } from '../quiz-question-bank.mjs';
 
 const newSlugs = ["game-loop-engine", "game-controls", "game-settings", "game-physics", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "setup-godot-with-ai", "enemies-ai"];
-const moduleSequence = ["character-creation", "game-assets-creation", "boss-creation", "storyline-engine", "parallax-tiling-map", "items-spawning", "enemies-ai", "game-loop-engine", "game-controls", "game-settings", "game-physics", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "math-stem-physics-quiz", "setup-godot-with-ai", "final-game", "microbit-gamepad"];
+const moduleSequence = ["character-creation", "game-assets-creation", "boss-creation", "storyline-engine", "parallax-tiling-map", "items-spawning", "enemies-ai", "game-loop-engine", "game-controls", "game-settings", "game-physics", "sound-engine", "game-ending-cutscene", "credits", "marketplace-system", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "math-stem-physics-quiz", "setup-godot-with-ai", "final-game", "microbit-gamepad"];
 async function startServer(storage) {
   const child = spawn(process.execPath, ["server.js"], {
     cwd: new URL("..", import.meta.url),
@@ -33,14 +33,14 @@ async function startServer(storage) {
   return { url, stop: async () => { const exited = once(child, "exit"); child.kill("SIGTERM"); await exited; } };
 }
 
-test("22 modules: localized navigation, overview pages, search and persistent progress", { timeout: 60000 }, async () => {
+test("23 modules: localized navigation, overview pages, search and persistent progress", { timeout: 60000 }, async () => {
   const storage = await mkdtemp(join(tmpdir(), "godot-forge-modules-test-"));
   let server = await startServer(storage);
   let browser;
   try {
     assert.equal((await (await fetch(`${server.url}/api/image/config`)).json()).configured, false);
     const modules = await (await fetch(`${server.url}/api/modules`)).json();
-    assert.equal(modules.length, 22);
+    assert.equal(modules.length, 23);
     const quizQuestions = await (await fetch(`${server.url}/api/quizzes/math-stem-physics-quiz`)).json();
     assert.equal(quizQuestions.length, 40);
     assert.deepEqual([...new Set(quizQuestions.map(question => question.category))], ['Math & Vectors', 'Physics & Motion', 'Game Systems', 'Game History']);
@@ -101,7 +101,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId: quizLearnerId }),
     })).status, 200);
     assert.equal((await (await fetch(`${server.url}/api/modules?learnerId=${quizLearnerId}`)).json()).find(module => module.slug === 'math-stem-physics-quiz').completed, false);
-    assert.deepEqual(modules.map(module => module.level), Array.from({ length: 22 }, (_, i) => i + 1));
+    assert.deepEqual(modules.map(module => module.level), Array.from({ length: 23 }, (_, i) => i + 1));
     assert.deepEqual(modules.map(module => module.slug), moduleSequence);
     assert.equal(modules[9].title, "Game HUD and Settings");
     assert.match(modules[9].description, /HUD/);
@@ -204,7 +204,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     assert.deepEqual(bossManifest.animations.map(row => row.frames.length), [1, 4, 4, 4, 4, 4, 4]);
     assert.deepEqual(bossManifest.unavailable, []);
     // Later lessons unlock only after this learner completes all prerequisites.
-    for (const module of modules.filter(item => item.level <= 18)) {
+    for (const module of modules.filter(item => item.level <= 19)) {
       const response = await fetch(`${server.url}/api/modules/${module.slug}/progress`, {
         method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed: true }),
       });
@@ -253,12 +253,12 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     await page.setViewportSize({ width: 1440, height: 1000 });
     for (const locale of ["en", "zh", "ms"]) {
       await page.goto(server.url);
-      await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 22);
+      await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 23);
       await page.click(`#language-toggle [data-locale="${locale}"]`);
       assert.equal(await page.locator('#module-math-stem-physics-quiz .complete-button').count(), 0);
       assert.equal(await page.locator('#module-math-stem-physics-quiz .quiz-requirement').count(), 1);
-      assert.equal(await page.locator("#module-nav .nav-item").count(), 22);
-      assert.equal(await page.locator(".module-card .module-icon").count(), 22);
+      assert.equal(await page.locator("#module-nav .nav-item").count(), 23);
+      assert.equal(await page.locator(".module-card .module-icon").count(), 23);
       for (const slug of newSlugs) {
         const module = modules.find(item => item.slug === slug);
         const translation = module.translations[locale];
@@ -272,7 +272,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
           assert.match(await page.locator('.lesson-intro h1').textContent(), /Godot|编辑器/);
           assert.equal(await page.locator('html').getAttribute('lang'), locale === 'zh' ? 'zh-CN' : locale);
           await page.goto(server.url);
-          await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+          await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
           continue;
         }
         if (["game-loop-engine", "game-controls", "game-settings", "game-physics", "game-ending-cutscene", "game-achievement", "game-leaderboard", "local-coop", "multiplayer-game", "enemies-ai", "credits"].includes(slug)) {
@@ -373,7 +373,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
           await page.setViewportSize({ width: 1440, height: 1000 });
           await page.goto(server.url);
-          await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 22);
+          await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 23);
           continue;
         }
         await page.waitForFunction(() => document.querySelector("#complete")?.disabled === false, null, { timeout: 5000 }).catch(error => { throw new Error(`${slug}/${locale} at ${page.url()}: ${error.message}`); });
@@ -419,7 +419,7 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
         await page.setViewportSize({ width: 1440, height: 1000 });
         await page.goto(server.url);
-        await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 22);
+        await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 23);
       }
     }
     await fetch(`${server.url}/api/modules/game-controls/progress`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed: false }) });
@@ -439,12 +439,12 @@ test("22 modules: localized navigation, overview pages, search and persistent pr
     await server.stop();
     server = await startServer(storage);
     const reloaded = await (await fetch(`${server.url}/api/modules?learnerId=${learnerId}`)).json();
-    assert.equal(reloaded.length, 22);
+    assert.equal(reloaded.length, 23);
     assert.equal(reloaded.find(module => module.slug === "game-controls").completed, true);
     await page.goto(server.url);
-    await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 22);
+    await page.waitForFunction(() => document.querySelectorAll(".module-card").length === 23);
     assert.equal(await page.locator("#progress-value").textContent(), `${Math.round(reloaded.filter(module => module.completed).length / reloaded.length * 100)}%`);
-    assert.ok((await page.locator("#progress-text").textContent()).includes("22"));
+    assert.ok((await page.locator("#progress-text").textContent()).includes("23"));
     assert.equal(await page.locator('#module-game-assets-creation .reset-module-button').isVisible(), true);
     const otherLearnerId = 'checkpoint-learner-0002';
     assert.equal((await fetch(`${server.url}/api/modules/game-assets-creation/checkpoint`, {

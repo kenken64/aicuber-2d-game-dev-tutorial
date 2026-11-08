@@ -18,6 +18,7 @@ import { makeCertificatePdf, validateCertificateName } from './certificate-pdf.m
 import { attachMultiplayerRooms } from './multiplayer-rooms.mjs';
 import { attachFinalGameRooms } from './final-game-rooms.mjs';
 import { createMarketplaceAuth } from './marketplace-auth.mjs';
+import { generateSoundEngineMusic } from './sound-engine-music.mjs';
 
 const marketplaceAuth = createMarketplaceAuth();
 
@@ -76,8 +77,8 @@ const resetPasscodeDigest = resetPasscode ? createHash('sha256').update(resetPas
 const certificateAuthorizations = new Map();
 
 async function certificateEligible(learnerId) {
-  const required = (await getModules(learnerId)).filter(module => Number(module.level) >= 1 && Number(module.level) <= 22);
-  return required.length === 22 && required.every(module => module.completed);
+  const required = (await getModules(learnerId)).filter(module => Number(module.level) >= 1 && Number(module.level) <= 23);
+  return required.length === 23 && required.every(module => module.completed);
 }
 const openAiApiKey = process.env.OPENAI_API_KEY || "";
 const openAiApiBase = (process.env.OPENAI_API_BASE || "https://api.openai.com/v1").replace(/\/+$/, "");
@@ -87,6 +88,10 @@ const storyVoiceRequests = new Map();
 const openRouterApiKey = process.env.OPENROUTER_API_KEY || "";
 const openRouterApiBase = (process.env.OPENROUTER_API_BASE || "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 const openRouterModel = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
+const soundEngineMusicModel = process.env.OPENROUTER_MUSIC_MODEL || 'google/lyria-3-clip-preview';
+const soundEngineRequests = [];
+const soundEngineMaxHourly = Math.max(1, Math.min(300, Number.parseInt(process.env.SOUND_ENGINE_MAX_PER_HOUR || '30', 10) || 30));
+let soundEngineActive = 0;
 
 const modules = [
   {
@@ -174,6 +179,18 @@ const modules = [
     },
   },
   {
+    slug: "sound-engine",
+    title: "Sound Engine",
+    description: "Create background music from a prompt and build jump, coin, and sword sound effects for your game.",
+    level: 12,
+    durationMinutes: 35,
+    tag: "AUDIO",
+    translations: {
+      zh: { title: "声音引擎", description: "通过提示词创建背景音乐，并为游戏制作跳跃、收集金币和挥剑音效。" },
+      ms: { title: "Enjin Bunyi", description: "Cipta muzik latar daripada prompt dan bina kesan bunyi lompatan, syiling dan hayunan pedang." },
+    },
+  },
+  {
     slug: "items-spawning",
     title: "Item Spawning",
     description: "Create random world pickups, collect them through player contact, and drop loot when an enemy is defeated.",
@@ -225,7 +242,7 @@ const modules = [
     slug: "game-ending-cutscene",
     title: "Ending Cutscene",
     description: "Recap the final boss battle, then let a consequential player choice shape the pixel-art ending.",
-    level: 12,
+    level: 13,
     durationMinutes: 30,
     tag: "CINEMATIC",
     translations: {
@@ -237,7 +254,7 @@ const modules = [
     slug: "credits",
     title: "Game Credits",
     description: "Produce readable, skippable, accessible credits that recognize contributors and tools.",
-    level: 13,
+    level: 14,
     durationMinutes: 15,
     tag: "CREDITS",
     translations: {
@@ -249,7 +266,7 @@ const modules = [
     slug: "marketplace-system",
     title: "Marketplace System",
     description: "Compare normal, rare, and epic armor, weapons, rings, and necklaces; buy with gold, sell owned gear, or salvage it into enchanting materials for a grade-based fee.",
-    level: 14,
+    level: 15,
     durationMinutes: 35,
     tag: "ECONOMY",
     translations: {
@@ -261,7 +278,7 @@ const modules = [
     slug: "game-achievement",
     title: "Achievements",
     description: "Collect ten gold coins and a healing heart, then watch earned badges animate and turn from grey to color.",
-    level: 15,
+    level: 16,
     durationMinutes: 30,
     tag: "REWARDS",
     translations: {
@@ -273,7 +290,7 @@ const modules = [
     slug: "game-leaderboard",
     title: "Leaderboards",
     description: "Collect ten gold coins and a heart for 150 points, then watch your score animate onto a leaderboard that changes from grey to color.",
-    level: 16,
+    level: 17,
     durationMinutes: 35,
     tag: "RANKING",
     translations: {
@@ -285,7 +302,7 @@ const modules = [
     slug: "local-coop",
     title: "Local Co-op",
     description: "Play a shared-screen coin run with one keyboard player, one gamepad player, and separate coin counters.",
-    level: 17,
+    level: 18,
     durationMinutes: 35,
     tag: "CO-OP",
     translations: {
@@ -297,7 +314,7 @@ const modules = [
     slug: "multiplayer-game",
     title: "Multiplayer Game",
     description: "Host or join a two-player WebSocket room from either player view, chat, ready up, and collect coins in a synchronized game.",
-    level: 18,
+    level: 19,
     durationMinutes: 45,
     tag: "NETWORKING",
     translations: {
@@ -309,7 +326,7 @@ const modules = [
     slug: "math-stem-physics-quiz",
     title: "Math, STEM & Physics Quiz",
     description: "Assess maths, physics, game systems, and computer-game history with a 40-question checkpoint.",
-    level: 19,
+    level: 20,
     durationMinutes: 40,
     tag: "STEM",
     translations: {
@@ -321,7 +338,7 @@ const modules = [
     slug: "setup-godot-with-ai",
     title: "Learn Godot Web Editor",
     description: "Run Godot in a cloud workspace, explore the 2D editor, and build with the lesson assets.",
-    level: 20,
+    level: 21,
     durationMinutes: 45,
     tag: "GODOT",
     translations: {
@@ -332,20 +349,20 @@ const modules = [
   {
     slug: "final-game",
     title: "Final Game",
-    description: "Build one complete Godot level with the art and systems from modules 1–18, then test solo, local co-op, and online play.",
-    level: 21,
+    description: "Build one complete Godot level with the art and systems from modules 1–19, then test solo, local co-op, and online play.",
+    level: 22,
     durationMinutes: 180,
     tag: "SHIP IT",
     translations: {
-      zh: { title: "最终游戏", description: "运用第 1–18 章的素材与系统，在 Godot 中制作并测试一个完整关卡。" },
-      ms: { title: "Permainan akhir", description: "Gunakan aset dan sistem modul 1–18 untuk membina dan menguji satu tahap Godot yang lengkap." },
+      zh: { title: "最终游戏", description: "运用第 1–19 章的素材与系统，在 Godot 中制作并测试一个完整关卡。" },
+      ms: { title: "Permainan akhir", description: "Gunakan aset dan sistem modul 1–19 untuk membina dan menguji satu tahap Godot yang lengkap." },
     },
   },
   {
     slug: "microbit-gamepad",
     title: "micro:bit DIY Bluetooth Gamepad",
     description: "Turn a Joystick:bit V2 into a wireless controller with MakeCode blocks and Bluetooth UART.",
-    level: 22,
+    level: 23,
     durationMinutes: 40,
     tag: "INPUT",
     translations: {
@@ -1455,6 +1472,33 @@ async function handleApi(request, response, url) {
     else createReadStream(starterKitPath).pipe(response);
     return;
   }
+  if (request.method === 'GET' && url.pathname === '/api/sound-engine/music/config') {
+    return sendJson(response, 200, { configured: Boolean(openRouterApiKey), model: soundEngineMusicModel });
+  }
+  if (request.method === 'POST' && url.pathname === '/api/sound-engine/music') {
+    const body = await readJson(request);
+    if (!body || typeof body !== 'object' || !validLearnerId(body.learnerId) || typeof body.prompt !== 'string' || !body.prompt.trim() || body.prompt.length > 1000 || body.acknowledgeCost !== true) {
+      return sendJson(response, 400, { error: 'Enter a music prompt and confirm the generation cost.' });
+    }
+    if (!openRouterApiKey) return sendJson(response, 503, { error: 'Music generation is not configured on this server.' });
+    const now = Date.now();
+    while (soundEngineRequests.length && soundEngineRequests[0].time <= now - 3600000) soundEngineRequests.shift();
+    if (soundEngineActive >= 2 || soundEngineRequests.length >= soundEngineMaxHourly || soundEngineRequests.filter(item => item.learnerId === body.learnerId).length >= 3) {
+      return sendJson(response, 429, { error: 'Music generation limit reached. Please try again later.' });
+    }
+    soundEngineRequests.push({ learnerId: body.learnerId, time: now });
+    soundEngineActive++;
+    try {
+      const audio = await generateSoundEngineMusic({ apiKey: openRouterApiKey, baseUrl: openRouterApiBase, model: soundEngineMusicModel, prompt: body.prompt.trim() });
+      response.writeHead(200, { 'content-type': audio.type, 'content-length': audio.bytes.length, 'content-disposition': `attachment; filename="forest-background-music.${audio.extension}"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
+      response.end(audio.bytes);
+    } catch (error) {
+      return sendJson(response, 502, { error: error.message });
+    } finally {
+      soundEngineActive--;
+    }
+    return;
+  }
   if (request.method === 'GET' && url.pathname === '/api/storyline/voice/config') {
     return sendJson(response, 200, { configured: Boolean(openAiApiKey), model: openAiTtsModel });
   }
@@ -1548,7 +1592,7 @@ async function handleApi(request, response, url) {
     if (typeof body.passcode !== 'string' || body.passcode.length > 128 || !timingSafeEqual(createHash('sha256').update(body.passcode, 'utf8').digest(), resetPasscodeDigest)) {
       return sendJson(response, 403, { error: 'Incorrect reset passcode.' });
     }
-    if (!await certificateEligible(body.learnerId)) return sendJson(response, 409, { error: 'Complete all 22 modules first.' });
+    if (!await certificateEligible(body.learnerId)) return sendJson(response, 409, { error: 'Complete all 23 modules first.' });
     const now = Date.now();
     for (const [token, grant] of certificateAuthorizations) if (grant.expiresAt <= now) certificateAuthorizations.delete(token);
     if (certificateAuthorizations.size >= 1000) return sendJson(response, 429, { error: 'Too many certificate requests. Try again shortly.' });
@@ -1569,7 +1613,7 @@ async function handleApi(request, response, url) {
     const validation = validateCertificateName(body.name);
     if (validation.error) return sendJson(response, 400, { error: validation.error });
     certificateAuthorizations.delete(body.token);
-    if (!await certificateEligible(body.learnerId)) return sendJson(response, 409, { error: 'Complete all 22 modules first.' });
+    if (!await certificateEligible(body.learnerId)) return sendJson(response, 409, { error: 'Complete all 23 modules first.' });
     const timeZone = typeof body.timeZone === 'string' && body.timeZone.length <= 100 ? body.timeZone : 'UTC';
     const pdf = await makeCertificatePdf(validation.name, quizLocale(body.locale), new Date(), timeZone);
     response.writeHead(200, { 'content-type': 'application/pdf', 'content-length': pdf.length, 'content-disposition': 'attachment; filename="godot-forge-certificate.pdf"', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
@@ -1724,12 +1768,12 @@ async function handleApi(request, response, url) {
     const body = await readJson(request);
     const completed = Boolean(body.completed);
     if (body.learnerId !== undefined && !validLearnerId(body.learnerId)) return sendJson(response, 400, { error: "A valid learner is required." });
-    if (completed && findModule(slug).level >= 20) {
+    if (completed && findModule(slug).level >= 21) {
       if (!validLearnerId(body.learnerId)) return sendJson(response, 400, { error: 'A valid learner is required to complete this module.' });
       const progress = await getModules(body.learnerId);
-      const required = progress.filter(module => Number(module.level) <= 19);
-      if (required.length !== 19 || required.some(module => !module.completed)) {
-        return sendJson(response, 403, { error: 'Complete modules 1–19 to unlock modules 20–22.' });
+      const required = progress.filter(module => Number(module.level) <= 20);
+      if (required.length !== 20 || required.some(module => !module.completed)) {
+        return sendJson(response, 403, { error: 'Complete modules 1–20 to unlock modules 21–23.' });
       }
     }
     if (slug === 'math-stem-physics-quiz') {

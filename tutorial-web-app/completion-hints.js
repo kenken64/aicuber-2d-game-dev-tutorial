@@ -51,6 +51,11 @@
       zh: '收集一枚金币、受到一次伤害，并使用音乐和音效两个设置。',
       ms: 'Kutip satu syiling, terima kerosakan, dan gunakan kedua-dua tetapan muzik dan bunyi.',
     },
+    'sound-engine': {
+      en: 'Play the background preview and try the jump, coin, and sword sounds. Music generation is optional.',
+      zh: '播放背景预览并尝试跳跃、金币和挥剑音效。生成音乐为可选步骤。',
+      ms: 'Mainkan pratonton muzik dan cuba bunyi lompat, syiling dan pedang. Penjanaan muzik adalah pilihan.',
+    },
     'game-physics': {
       en: 'Drop the boulder and wait for it to splash into the water.',
       zh: '让巨石落下，并等待它溅入水中。',
@@ -113,9 +118,9 @@
     },
   };
   const labels = {
-    en: { help: 'Show completion requirements', lock: 'Complete modules 1–19 to unlock this module.' },
-    zh: { help: '显示模块完成要求', lock: '完成第 1–19 个模块后解锁。' },
-    ms: { help: 'Tunjukkan syarat penyelesaian', lock: 'Lengkapkan modul 1–19 untuk membuka modul ini.' },
+    en: { help: 'Show completion requirements', lock: 'Complete modules 1–20 to unlock this module.' },
+    zh: { help: '显示模块完成要求', lock: '完成第 1–20 个模块后解锁。' },
+    ms: { help: 'Tunjukkan syarat penyelesaian', lock: 'Lengkapkan modul 1–20 untuk membuka modul ini.' },
   };
   const locale = () => labels[localStorage.getItem('godot-forge-locale')] ? localStorage.getItem('godot-forge-locale') : 'en';
   const requirement = slug => requirements[slug]?.[locale()] || '';

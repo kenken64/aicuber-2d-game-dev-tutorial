@@ -21,7 +21,7 @@ For text and design requests, set `OPENROUTER_API_KEY` and optionally `OPENROUTE
 
 ## Modules and project layout
 
-The [web app](tutorial-web-app/README.md) serves the landing page, API, and 22 modules. Complete modules 1–19, including passing and completing the quiz, to unlock modules 20–22. Module 22 is a bonus lesson. Reopening a prerequisite locks those later modules again without deleting their saved progress. The sibling module folders contain lessons for character and asset creation, storyline and tilemap design, spawning and AI, controls and physics, achievements and leaderboards, local and online multiplayer, the final cutscene, credits, a quiz, Godot setup, and the final game. See the web app README for the full module list and API details.
+The [web app](tutorial-web-app/README.md) serves the landing page, API, and 23 modules. Complete modules 1–20, including the Sound Engine and passing the quiz, to unlock modules 21–23. Module 23 is a bonus lesson. Reopening a prerequisite locks those later modules again without deleting their saved progress. The sibling module folders contain lessons for character and asset creation, storyline and tilemap design, spawning and AI, controls and physics, achievements and leaderboards, local and online multiplayer, the final cutscene, credits, a quiz, Godot setup, and the final game. See the web app README for the full module list and API details.
 
 | Path | Purpose |
 | --- | --- |

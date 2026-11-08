@@ -1,6 +1,6 @@
 const copy = {
   en: {
-    back: '← Learning path', chapter: 'CHAPTER 20 / GODOT WEB EDITOR', title: 'Learn Godot Web Editor.',
+    back: '← Learning path', chapter: 'CHAPTER 21 / GODOT WEB EDITOR', title: 'Learn Godot Web Editor.',
     language: 'Language', homeAria: 'Godot Forge home', walkthroughAria: 'Godot Web Editor walkthrough',
     intro: 'Open the starter project in your browser, explore the 2D editor, make one change, run it, and save your work.',
     downloadKit: 'Download starter ZIP · 83 MiB', openEditor: 'Open Godot Web Editor ↗', stepsLabel: 'Walkthrough steps',
@@ -36,7 +36,7 @@ const copy = {
     toolbarAlt: 'Top of the Godot editor with workspace tabs and play controls'
   },
   zh: {
-    back: '← 学习路径', chapter: '第 20 章 / GODOT 网页编辑器', title: '学习 Godot 网页编辑器。',
+    back: '← 学习路径', chapter: '第 21 章 / GODOT 网页编辑器', title: '学习 Godot 网页编辑器。',
     language: '语言', homeAria: 'Godot Forge 首页', walkthroughAria: 'Godot 网页编辑器操作指南',
     intro: '在浏览器中打开入门项目，探索 2D 编辑器，做一处修改，运行场景并保存作品。',
     downloadKit: '下载入门 ZIP · 83 MiB', openEditor: '打开 Godot 网页编辑器 ↗', stepsLabel: '操作步骤',
@@ -72,7 +72,7 @@ const copy = {
     toolbarAlt: 'Godot 编辑器顶部的工作区标签和播放按钮'
   },
   ms: {
-    back: '← Laluan pembelajaran', chapter: 'BAB 20 / GODOT WEB EDITOR', title: 'Pelajari Godot Web Editor.',
+    back: '← Laluan pembelajaran', chapter: 'BAB 21 / GODOT WEB EDITOR', title: 'Pelajari Godot Web Editor.',
     language: 'Bahasa', homeAria: 'Laman utama Godot Forge', walkthroughAria: 'Panduan Godot Web Editor',
     intro: 'Buka projek permulaan dalam pelayar, terokai editor 2D, buat satu perubahan, jalankan dan simpan kerja anda.',
     downloadKit: 'Muat turun ZIP permulaan · 83 MiB', openEditor: 'Buka Godot Web Editor ↗', stepsLabel: 'Langkah panduan',
@@ -110,7 +110,7 @@ const copy = {
 };
 
 Object.assign(copy.en, {
-  back: '← GODOT FORGE / LEARNING PATH', chapter: 'CHAPTER 20 / GODOT WEB EDITOR',
+  back: '← GODOT FORGE / LEARNING PATH', chapter: 'CHAPTER 21 / GODOT WEB EDITOR',
   introEyebrow: 'GUIDED WORKSPACE / STARTER PROJECT',
   intro: 'Run Godot on our cloud server, edit the starter project in this lesson, and keep your work on the server.',
   cloudTitle: 'Your cloud editor', cloudIntro: 'Your project opens with the lesson assets already installed. It remains on the server when you stop the editor.',
@@ -133,7 +133,7 @@ Object.assign(copy.en, {
   credit: 'Godot editor screenshots by Juan Linietsky, Ariel Manzur, and the Godot Engine community.'
 });
 Object.assign(copy.zh, {
-  back: '← GODOT FORGE / 学习路径', chapter: '第 20 章 / GODOT 网页编辑器',
+  back: '← GODOT FORGE / 学习路径', chapter: '第 21 章 / GODOT 网页编辑器',
   introEyebrow: '操作指南 / 入门项目',
   intro: '在云服务器上运行 Godot，直接在本课中编辑入门项目，并将作品保存在服务器上。',
   cloudTitle: '你的云端编辑器', cloudIntro: '项目打开时已包含课程素材。停止编辑器后，作品仍保留在服务器上。',
@@ -153,7 +153,7 @@ Object.assign(copy.zh, {
   credit: 'Godot 编辑器截图作者：Juan Linietsky、Ariel Manzur 和 Godot Engine 社区。'
 });
 Object.assign(copy.ms, {
-  back: '← GODOT FORGE / LALUAN PEMBELAJARAN', chapter: 'BAB 20 / EDITOR GODOT WEB',
+  back: '← GODOT FORGE / LALUAN PEMBELAJARAN', chapter: 'BAB 21 / EDITOR GODOT WEB',
   introEyebrow: 'PANDUAN EDITOR / PROJEK PERMULAAN',
   intro: 'Jalankan Godot pada pelayan awan kami, sunting projek permulaan dalam pelajaran ini dan simpan kerja anda pada pelayan.',
   cloudTitle: 'Editor awan anda', cloudIntro: 'Projek anda dibuka dengan aset pelajaran siap dipasang. Projek kekal pada pelayan apabila editor dihentikan.',

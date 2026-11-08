@@ -37,7 +37,9 @@
     "test:modules": "node --test tests/modules.test.js",
     "test:module-unlock": "node tests/module-unlock-browser.js",
     "test:reset-passcode": "node tests/reset-passcode-browser.js",
-    "test:text-size": "node tests/text-size-browser.js"
+    "test:text-size": "node tests/text-size-browser.js",
+    "test:sound-engine": "node --test tests/sound-engine-music.test.js tests/sound-engine-api.test.js",
+    "test:sound-engine-browser": "node tests/sound-engine-browser.js"
   },
   "engines": {
     "node": ">=20"

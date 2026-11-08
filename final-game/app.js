@@ -1,6 +1,6 @@
 const copy = {
   en: {
-    back: '← Learning path', chapter: 'CHAPTER 21 / FINAL GAME', title: 'Build your final game.',
+    back: '← Learning path', chapter: 'CHAPTER 22 / FINAL GAME', title: 'Build your final game.',
     intro: 'Start with the artwork from the lessons, then assemble your own Godot 2D game in the cloud editor.',
     kitTitle: 'Your starter kit', kitDescription: 'The ZIP contains a Godot project, 83 published module images, seven animation coordinate files, and an asset catalog. It is about 83 MiB.',
     download: 'Download starter ZIP', editorTitle: 'Open it in Godot',
@@ -9,7 +9,7 @@ const copy = {
     saveNote: 'Your project stays on the server while the workspace exists. Stop and delete workspace removes it permanently, so download your project ZIP first.'
   },
   zh: {
-    back: '← 学习路径', chapter: '第 21 章 / 最终游戏', title: '构建你的最终游戏。',
+    back: '← 学习路径', chapter: '第 22 章 / 最终游戏', title: '构建你的最终游戏。',
     intro: '使用课程中的美术素材作为起点，在云端编辑器中组装你自己的 Godot 2D 游戏。',
     kitTitle: '入门素材包', kitDescription: 'ZIP 包含 Godot 项目、83 个已发布的模块图像、7 个动画坐标文件和素材目录，大小约 83 MiB。',
     download: '下载入门 ZIP', editorTitle: '在 Godot 中打开',
@@ -18,7 +18,7 @@ const copy = {
     saveNote: '工作区存在时，项目保存在服务器上。“停止并删除工作区”会永久删除项目，请先下载项目 ZIP。'
   },
   ms: {
-    back: '← Laluan pembelajaran', chapter: 'BAB 21 / PERMAINAN AKHIR', title: 'Bina permainan akhir anda.',
+    back: '← Laluan pembelajaran', chapter: 'BAB 22 / PERMAINAN AKHIR', title: 'Bina permainan akhir anda.',
     intro: 'Mulakan dengan karya seni daripada modul pembelajaran, kemudian bina permainan Godot 2D anda dalam editor awan.',
     kitTitle: 'Kit permulaan anda', kitDescription: 'ZIP ini mengandungi projek Godot, 83 imej modul yang diterbitkan, tujuh fail koordinat animasi dan katalog aset. Saiznya kira-kira 83 MiB.',
     download: 'Muat turun ZIP permulaan', editorTitle: 'Buka dalam Godot',
@@ -30,7 +30,7 @@ const copy = {
 
 Object.assign(copy.en, {
   eyebrow: 'CAPSTONE / GODOT PROJECT',
-  intro: 'Build one complete 2D level in the Godot cloud editor, using the characters, art, and systems you made across modules 1–18.',
+  intro: 'Build one complete 2D level in the Godot cloud editor, using the characters, art, and systems you made across modules 1–19.',
   briefTitle: 'The one-level challenge', briefBody: 'Create a single journey: explore a forest with coins, a shop, enemies and a boss, then reach the portal for the ending and credits. Coins and enemy defeats are optional. Use the same level for solo, local co-op, and online play.',
   briefFreedom: 'Make the story and visual theme your own. Keep the full journey playable from start to finish before adding extra polish.',
   kitDescription: 'The ZIP contains a Godot project, published lesson media, animation coordinate files, and an asset catalog. The project opens on a welcome scene that you will replace with your level.',
@@ -46,7 +46,7 @@ Object.assign(copy.en, {
 });
 Object.assign(copy.zh, {
   eyebrow: '毕业项目 / GODOT 游戏',
-  intro: '在 Godot 云端编辑器中，结合第 1–18 章制作的角色、美术和系统，完成一个完整的 2D 关卡。',
+  intro: '在 Godot 云端编辑器中，结合第 1–19 章制作的角色、美术和系统，完成一个完整的 2D 关卡。',
   briefTitle: '单关卡挑战', briefBody: '探索有金币、商店、敌人和首领的森林，到达传送门即可进入结局和制作名单。收集金币及击败敌人均为可选。单人、本地合作和在线模式使用同一关卡。',
   briefFreedom: '故事和视觉主题由你决定。先让完整流程可以通关，再添加细节。',
   kitDescription: 'ZIP 包含 Godot 项目、课程素材、动画坐标文件和素材目录。项目打开后会显示欢迎场景，你将用自己的关卡替换它。',
@@ -62,7 +62,7 @@ Object.assign(copy.zh, {
 });
 Object.assign(copy.ms, {
   eyebrow: 'PROJEK AKHIR / GODOT',
-  intro: 'Bina satu tahap 2D yang lengkap dalam editor awan Godot menggunakan watak, seni dan sistem daripada modul 1–18.',
+  intro: 'Bina satu tahap 2D yang lengkap dalam editor awan Godot menggunakan watak, seni dan sistem daripada modul 1–19.',
   briefTitle: 'Cabaran satu tahap', briefBody: 'Cipta satu perjalanan: bermula di kawasan selamat, lepasi bahaya, kumpul 20 syiling, lawati kedai, kalahkan dua jenis musuh dan bos, kemudian buat pilihan akhir dan paparkan kredit. Gunakan tahap yang sama untuk solo, kerjasama setempat dan permainan dalam talian.',
   briefFreedom: 'Pilih cerita dan tema visual anda sendiri. Pastikan perjalanan lengkap boleh dimainkan sebelum menambah perincian.',
   kitDescription: 'ZIP mengandungi projek Godot, media pelajaran, fail koordinat animasi dan katalog aset. Projek bermula dengan adegan alu-aluan yang akan digantikan dengan tahap anda.',
@@ -118,7 +118,7 @@ Object.assign(copy.ms, {
 });
 
 Object.assign(copy.en, {
-  intro: 'Build one complete 2D level in a locally installed Godot editor or a cloud workspace, using the characters, art, and systems you made across modules 1–18.',
+  intro: 'Build one complete 2D level in a locally installed Godot editor or a cloud workspace, using the characters, art, and systems you made across modules 1–19.',
   editorChoice: 'Choose one way to work. Both use Godot 4 and the same starter project.',
   localEditorTitle: 'Option 1 · Godot on your computer',
   localStepOne: 'Download and extract the starter ZIP above. Install or open Godot 4 on your computer.',
@@ -131,7 +131,7 @@ Object.assign(copy.en, {
   finishFive: 'Back up the finished project: copy the local project folder or download the cloud project ZIP, then open the copy to confirm your changes.'
 });
 Object.assign(copy.zh, {
-  intro: '使用本机安装的 Godot 编辑器或云端工作区，结合第 1–18 章制作的角色、美术和系统，完成一个完整的 2D 关卡。',
+  intro: '使用本机安装的 Godot 编辑器或云端工作区，结合第 1–19 章制作的角色、美术和系统，完成一个完整的 2D 关卡。',
   editorChoice: '选择一种方式制作。两种方式都使用 Godot 4 和相同的入门项目。',
   localEditorTitle: '方式 1 · 本机 Godot 编辑器',
   localStepOne: '下载并解压上方的入门 ZIP。在电脑上安装或打开 Godot 4。',
@@ -144,7 +144,7 @@ Object.assign(copy.zh, {
   finishFive: '备份完成的项目：复制本机项目文件夹或下载云端项目 ZIP，再打开副本确认改动。'
 });
 Object.assign(copy.ms, {
-  intro: 'Bina satu tahap 2D yang lengkap dalam editor Godot yang dipasang pada komputer atau dalam ruang kerja awan, menggunakan watak, seni dan sistem daripada modul 1–18.',
+  intro: 'Bina satu tahap 2D yang lengkap dalam editor Godot yang dipasang pada komputer atau dalam ruang kerja awan, menggunakan watak, seni dan sistem daripada modul 1–19.',
   editorChoice: 'Pilih satu cara untuk bekerja. Kedua-duanya menggunakan Godot 4 dan projek permulaan yang sama.',
   localEditorTitle: 'Pilihan 1 · Godot pada komputer',
   localStepOne: 'Muat turun dan ekstrak ZIP permulaan di atas. Pasang atau buka Godot 4 pada komputer anda.',
@@ -181,9 +181,9 @@ const moduleSlugs = {
   1: 'character-creation', 2: 'game-assets-creation', 3: 'boss-creation',
   4: 'storyline-engine', 5: 'parallax-tiling-map', 6: 'items-spawning',
   7: 'enemies-ai', 8: 'game-loop-engine', 9: 'game-controls',
-  10: 'game-settings', 11: 'game-physics', 12: 'game-ending-cutscene',
-  13: 'credits', 14: 'marketplace-system', 15: 'game-achievement',
-  16: 'game-leaderboard', 17: 'local-coop', 18: 'multiplayer-game'
+  10: 'game-settings', 11: 'game-physics', 12: 'sound-engine',
+  13: 'game-ending-cutscene', 14: 'credits', 15: 'marketplace-system',
+  16: 'game-achievement', 17: 'game-leaderboard', 18: 'local-coop', 19: 'multiplayer-game'
 };
 const navList = document.querySelector('#build-nav-list');
 const sections = document.querySelector('#build-sections');

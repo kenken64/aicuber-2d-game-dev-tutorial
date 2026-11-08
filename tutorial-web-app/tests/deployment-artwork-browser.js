@@ -29,7 +29,7 @@ try {
     });
   });
   const modules = await (await fetch(`${baseUrl}/api/modules`)).json();
-  assert.equal(modules.length, 22);
+  assert.equal(modules.length, 23);
   const published = await fetch(`${baseUrl}/api/published-assets/8c13118f-087c-4fc2-83e6-3462f38c5b1b.png`);
   assert.equal(published.status, 200);
   assert.match(published.headers.get('content-type'), /^image\/png/);

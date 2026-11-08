@@ -867,7 +867,7 @@ h2 {
   }
 }
 
-/* Chapters 20–22 open after the first nineteen modules. */
+/* Chapters 21–23 open after the first twenty modules. */
 .nav-item.locked { opacity: .6; cursor: not-allowed; }
 .module-card.locked { opacity: .72; }
 .module-card.locked:hover { border-color: var(--line); box-shadow: none; transform: none; }

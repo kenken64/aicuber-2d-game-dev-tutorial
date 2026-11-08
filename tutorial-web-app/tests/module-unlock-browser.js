@@ -27,9 +27,9 @@ try {
     method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ learnerId, completed }),
   });
   const modules = await (await fetch(`${base}/api/modules?learnerId=${learnerId}`)).json();
-  const prerequisites = modules.filter(module => module.level <= 19);
-  const gated = modules.filter(module => module.level >= 20);
-  assert.equal(prerequisites.length, 19);
+  const prerequisites = modules.filter(module => module.level <= 20);
+  const gated = modules.filter(module => module.level >= 21);
+  assert.equal(prerequisites.length, 20);
   assert.equal(gated.length, 3);
   for (const module of gated) assert.equal((await setProgress(module.slug, true)).status, 403);
 
@@ -37,22 +37,22 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await page.addInitScript(id => localStorage.setItem('godot-forge-learner-id', id), learnerId);
   await page.goto(base);
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   assert.equal(await page.locator('#module-nav .nav-item.locked[aria-disabled="true"]').count(), 3);
   for (const module of gated) {
     const card = page.locator(`#module-${module.slug}`);
-    assert.match(await card.locator('.module-lock-reason').textContent(), /1–19/);
+    assert.match(await card.locator('.module-lock-reason').textContent(), /1–20/);
     assert.equal(await card.locator('.complete-button').isDisabled(), true);
     assert.equal(await card.locator('a.card-action').count(), 0);
     await page.goto(`${base}/${module.slug}/`);
     await page.waitForSelector('#module-gate');
-    assert.match(await page.locator('#module-gate').textContent(), /0 of 19/);
+    assert.match(await page.locator('#module-gate').textContent(), /0 of 20/);
     await page.goto(base);
-    await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+    await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   }
   assert.match(await page.locator('#module-microbit-gamepad h3').textContent(), /^BONUS/);
   assert.match(await page.locator('#module-items-spawning .complete-button').getAttribute('title'), /two hits/);
-  assert.match(await page.locator('#module-microbit-gamepad .complete-button').getAttribute('title'), /1–19/);
+  assert.match(await page.locator('#module-microbit-gamepad .complete-button').getAttribute('title'), /1–20/);
 
   const completionControls = {
     'character-creation': '#lesson-mark-complete', 'game-assets-creation': '#complete-module',
@@ -60,7 +60,7 @@ try {
     'parallax-tiling-map': '#complete-module', 'items-spawning': '#complete-module',
     'enemies-ai': '#complete-module', 'game-loop-engine': '#lesson-mark-complete',
     'game-controls': '#complete-module', 'game-settings': '#complete-module',
-    'game-physics': '#complete-module', 'game-ending-cutscene': '#complete-module',
+    'game-physics': '#complete-module', 'sound-engine': '#complete-module', 'game-ending-cutscene': '#complete-module',
     'credits': '#complete-module', 'marketplace-system': '#complete',
     'game-achievement': '#complete-module', 'game-leaderboard': '#complete-module',
     'local-coop': '#complete-module', 'multiplayer-game': '#complete-module',
@@ -98,7 +98,7 @@ try {
       return value;
     });
     assert.deepEqual(appearance, ['190px', '46px', '11px', 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', 'rgb(196, 242, 101)', 'rgb(20, 33, 25)'], `${module.slug} completion style`);
-    if (module.level === 19) assert.equal(await button.isDisabled(), true, 'quiz completion requires a passing score');
+    if (module.slug === 'math-stem-physics-quiz') assert.equal(await button.isDisabled(), true, 'quiz completion requires a passing score');
   }
   for (const slug of ['character-creation', 'game-assets-creation', 'boss-creation', 'game-loop-engine']) {
     await page.goto(`${base}/${slug}/`);
@@ -112,10 +112,10 @@ try {
     await page.waitForFunction(selector => /MARK/.test(document.querySelector(selector).textContent), completionControls[slug]);
   }
   await page.goto(base);
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
-  for (const module of prerequisites.filter(module => module.level < 19)) assert.equal((await setProgress(module.slug, true)).status, 200);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
+  for (const module of prerequisites.filter(module => module.level < 20)) assert.equal((await setProgress(module.slug, true)).status, 200);
   await page.reload();
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   assert.equal(await page.locator('#module-nav .nav-item.locked').count(), 3, 'quiz is still required');
   for (const question of quizQuestionBank) {
     const response = await fetch(`${base}/api/quizzes/math-stem-physics-quiz/answer`, {
@@ -130,7 +130,7 @@ try {
   assert.equal(await page.locator('#module-nav .nav-item.locked').count(), 0);
   for (const module of gated) {
     await page.goto(base);
-    await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+    await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
     assert.equal(await page.locator(`#module-${module.slug} a.card-action`).count(), 1);
     await page.goto(`${base}/${module.slug}/`);
     await page.waitForFunction(() => !document.documentElement.hasAttribute('data-module-gated'));
@@ -155,12 +155,12 @@ try {
   }
   assert.equal((await setProgress('character-creation', false)).status, 200);
   await page.goto(base);
-  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 22);
+  await page.waitForFunction(() => document.querySelectorAll('.module-card').length === 23);
   assert.equal(await page.locator('#module-nav .nav-item.locked').count(), 3);
   const restored = await (await fetch(`${base}/api/modules?learnerId=${learnerId}`)).json();
-  assert.ok(restored.filter(module => module.level >= 20).every(module => module.completed), 'existing later progress is preserved');
+  assert.ok(restored.filter(module => module.level >= 21).every(module => module.completed), 'existing later progress is preserved');
   assert.equal((await setProgress('microbit-gamepad', true)).status, 403);
-  console.log('PASS: locked navigation and direct visits, all 19 prerequisites including quiz, BONUS label, unlock, relock and preserved progress.');
+  console.log('PASS: locked navigation and direct visits, all 20 prerequisites including quiz, BONUS label, unlock, relock and preserved progress.');
 } finally {
   if (browser) await browser.close();
   if (server.exitCode === null) { const exited = once(server, 'exit'); server.kill('SIGTERM'); await exited; }

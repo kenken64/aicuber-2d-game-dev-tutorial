@@ -7,6 +7,13 @@ window.finalGameFunctionDetails = {
       ['JSON.parse_string(FileAccess.get_file_as_string("user://final_save.json"))', 'Read the file as text and turn its JSON into Godot data.'],
       ['if data is Dictionary:', 'Only accept the expected object shape; then restore badges and leaderboard records.']
     ],
+    _exit_tree: [['child.stop()', 'Stop any active audio before the game closes.']],
+    _load_audio_settings: [['config.load(AUDIO_SETTINGS_PATH)', 'Read saved sound and volume preferences before the menu opens.']],
+    set_sound_enabled: [['sound_enabled = enabled', 'Set sound on or off and save the choice.']],
+    set_sound_volume: [['sound_volume = clampf(volume, 0.0, 1.0)', 'Keep the master volume between zero and one and save it.']],
+    _apply_audio_settings: [['AudioServer.set_bus_mute(0, not sound_enabled)', 'Apply the saved volume and mute state to the Master bus.']],
+    _save_audio_settings: [['config.save(AUDIO_SETTINGS_PATH)', 'Save audio separately from keyboard and gamepad mappings.']],
+    play_sound: [['var stream := AudioStreamWAV.new()', 'Generate a short sound cue and play it through the Master bus.']],
     start_run: [
       ['coins = 0', 'Reset spendable coins for this attempt.'],
       ['collected = 0', 'Reset the separate total coin count for this run; spending coins does not lower it.'],
@@ -96,6 +103,8 @@ window.finalGameFunctionDetails = {
     ]
   },
   'scripts/ControlsMenu.gd': {
+    _menu_box: [['var box := StyleBoxFlat.new()', 'Build rounded menu surfaces with a matching border.']],
+    _style_button: [['button.add_theme_stylebox_override("normal"', 'Style the control binding buttons and their focus states.']],
     _ready: [['process_mode = Node.PROCESS_MODE_ALWAYS', 'Keep the controls menu usable while gameplay is paused.'], ['_load_settings()', 'Restore the saved keyboard and controller choices.']],
     _build_menu: [['for label_text in ACTIONS:', 'Create a keyboard and gamepad binding button for every action.']],
     open_menu: [['get_tree().paused = true', 'Pause gameplay before showing the menu.']],
@@ -231,6 +240,11 @@ window.finalGameFunctionDetails = {
     _start_solo: [["Game.menu_role = \"\"", "Start a new solo level."]],
     _field: [["var field := LineEdit.new()", "Create a styled text field for room or relay details."]],
     _multiplayer: [["_clear()", "Show host and join options for a new run."]],
+    _audio: [['heading.text = "SOUND SETTINGS"', 'Build the separate sound and master volume screen.']],
+    _audio_volume_changed: [['Game.set_sound_volume(value / 100.0)', 'Apply the selected percentage and persist it.']],
+    _toggle_sound: [['Game.set_sound_enabled(not Game.sound_enabled)', 'Switch the saved sound setting on or off.']],
+    _update_audio_state: [['sound_button.set_pressed_no_signal(Game.sound_enabled)', 'Keep the toggle and displayed percentage in sync.']],
+    _test_sound: [['Game.play_sound("coin")', 'Play a short preview when sound is enabled.']],
     _progress: [["heading.text = \"YOUR PROGRESS\"", "Show saved achievements and leaderboard scores."]],
     _host: [["_connect_room(\"host\")", "Start hosting on the chosen relay."]],
     _join: [["var code := room_field.text.strip_edges().to_upper()", "Validate the six-character room code before joining."]],
@@ -244,7 +258,7 @@ window.finalGameFunctionDetails = {
       ['p2.active = false', 'Hide player two until a local player joins or an online guest connects.'],
       ['p1.add_collision_exception_with(p2)', 'Prevent the hidden second player from blocking the first, and let both players pass each other.'],
       ['_assign_gamepads()', 'Bind the currently connected controllers to the right players.'],
-      ['exit_area.body_entered.connect(_on_exit)', 'Connect the exit trigger; later lines wire the volume, ending, room, and shop controls.']
+      ['exit_area.body_entered.connect(_on_exit)', 'Connect the exit trigger; later lines wire the ending, room, and shop controls.']
     ],
     _process: [
       ['_assign_gamepads()', 'Refresh bindings if the active player arrangement changes.'],
@@ -301,10 +315,6 @@ window.finalGameFunctionDetails = {
       ['$UI/Finale/KeepButton.hide()', 'Remove the choice buttons once a decision is made.'],
       ['create_tween().tween_property(result_label, "modulate:a", 1.0, 1.0)', 'Fade the result text into view over one second.'],
       ['create_tween().tween_property(roll, "modulate:a", 1.0, 1.0)', 'Fade the credits into the card after the ending choice.']
-    ],
-    _volume_changed: [
-      ['maxf(value, 0.001)', 'Keep the slider value above zero so the logarithmic conversion stays valid.'],
-      ['AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001)))', 'Convert the slider’s linear value to decibels for the master audio bus.']
     ],
     _restart: [
       ['get_tree().paused = false', 'Resume the tree first, even if restart was pressed on a paused screen.'],

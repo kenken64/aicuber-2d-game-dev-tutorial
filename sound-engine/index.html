@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Create game music and build jump, coin and sword sound effects." />
+  <title>Sound Engine · Godot Forge</title>
+  <link rel="stylesheet" href="/toast.css" />
+  <link rel="stylesheet" href="/module-reset.css" />
+  <link rel="stylesheet" href="/sound-engine/styles.css?v=20261108-animation" />
+  <link rel="stylesheet" href="/module-completion.css?v=20261102-tooltips" />
+  <script src="/brand-storage.js"></script>
+  <script src="/toast.js" defer></script>
+  <script src="/module-reset.js" defer></script>
+  <script src="/sound-engine/app.js" defer></script>
+  <script src="/completion-hints.js?v=20261102" defer></script>
+</head>
+<body data-module="sound-engine">
+  <div class="sound-shell">
+    <header class="module-header">
+      <a href="/" class="back-link" data-i18n="back">← GODOT FORGE / LEARNING PATH</a>
+      <span class="chapter" data-i18n="chapter">CHAPTER 12 / SOUND ENGINE</span>
+      <div class="languages" id="languages" role="group" aria-label="Language"><button type="button" data-locale="en">EN</button><button type="button" data-locale="zh">中文</button><button type="button" data-locale="ms">BM</button></div>
+    </header>
+    <main>
+      <section class="hero">
+        <p class="eyebrow" data-i18n="eyebrow">MUSIC / EFFECTS / YOUR GAME</p>
+        <h1 data-i18n="title">Give your game<br />a voice.</h1>
+        <p class="lead" data-i18n="intro">Set the mood with background music, then bring every jump, coin and sword swing to life.</p>
+        <div class="hero-notes" aria-hidden="true"><span>♪</span><span>♫</span><span>✦</span></div>
+      </section>
+      <section class="music-section" aria-labelledby="music-title">
+        <div class="section-head"><div><p class="eyebrow" data-i18n="musicEyebrow">01 / THE SOUNDTRACK</p><h2 id="music-title" data-i18n="musicTitle">Start with a mood.</h2><p data-i18n="musicIntro">Describe your world and generate a short instrumental background track, or listen to the free example.</p></div><span class="section-badge" data-i18n="musicBadge">PROMPT → MUSIC</span></div>
+        <div class="music-grid">
+          <div class="prompt-panel">
+            <label for="music-prompt" data-i18n="promptLabel">BACKGROUND MUSIC PROMPT</label>
+            <textarea id="music-prompt" maxlength="1000" rows="5">A gentle fantasy forest adventure, warm piano, soft flute and light strings, hopeful and mysterious, seamless instrumental loop.</textarea>
+            <div class="prompt-actions"><button id="generate-music" class="primary" type="button" disabled data-i18n="generate">GENERATE MUSIC</button><button id="example-music" class="secondary" type="button" data-i18n="example">USE FREE EXAMPLE</button></div>
+            <p class="cost-note" data-i18n="cost">OpenRouter’s Lyria 3 Clip Preview is listed at about US$0.04 per 30-second clip. Prices and availability can change; generation uses the server’s configured OpenRouter account.</p>
+            <p id="music-status" class="status" role="status" aria-live="polite"></p>
+          </div>
+          <div class="listen-panel"><div class="wave-art" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div><p class="eyebrow" data-i18n="listenEyebrow">BACKGROUND MUSIC</p><h3 id="track-name" data-i18n="noTrack">No track selected yet</h3><p class="muted" data-i18n="listenHelp">Play the example or generate your own. Download your track to use it in Godot.</p></div><audio id="music-player" controls loop preload="none" aria-label="Background music player"></audio><a id="download-music" class="download" hidden download="game-background-music.wav" data-i18n="downloadMusic">DOWNLOAD TRACK ↓</a></div>
+        </div>
+      </section>
+      <section class="effects-section" aria-labelledby="effects-title">
+        <div class="section-head"><div><p class="eyebrow" data-i18n="effectsEyebrow">02 / THE ACTIONS</p><h2 id="effects-title" data-i18n="effectsTitle">Make every action count.</h2><p data-i18n="effectsIntro">Try the sounds below. Each one is made in your browser and can be downloaded as a WAV file.</p></div><span class="section-badge" data-i18n="localBadge">MADE LOCALLY</span></div>
+        <div class="stage" id="stage" aria-label="Forest sound-effects demonstration"><div class="stars" aria-hidden="true">✦ &nbsp; ✧ &nbsp; ✦</div><div class="hero-sprite" id="hero-sprite" aria-hidden="true"></div><div class="coin" id="coin" aria-hidden="true">✦</div><div class="slash" id="slash" aria-hidden="true"></div><p id="stage-message" class="stage-message" aria-live="polite" data-i18n="stageReady">Choose an action to hear it.</p></div>
+        <div class="effects-grid">
+          <article class="effect-card"><span class="effect-icon" aria-hidden="true">↟</span><h3 data-i18n="jump">Jump</h3><p data-i18n="jumpDescription">A rising sound gives lift to the player.</p><button type="button" class="effect-play" data-effect="jump" data-i18n="tryJump">▶ TRY JUMP</button><button type="button" class="effect-download" data-download="jump" data-i18n="downloadWav">DOWNLOAD WAV ↓</button></article>
+          <article class="effect-card"><span class="effect-icon" aria-hidden="true">✦</span><h3 data-i18n="coin">Collect coin</h3><p data-i18n="coinDescription">A bright chime rewards the pickup.</p><button type="button" class="effect-play" data-effect="coin" data-i18n="tryCoin">▶ TRY COIN</button><button type="button" class="effect-download" data-download="coin" data-i18n="downloadWav">DOWNLOAD WAV ↓</button></article>
+          <article class="effect-card"><span class="effect-icon" aria-hidden="true">╱</span><h3 data-i18n="sword">Sword slash</h3><p data-i18n="swordDescription">A quick swoosh makes a swing feel responsive.</p><button type="button" class="effect-play" data-effect="sword" data-i18n="trySword">▶ TRY SLASH</button><button type="button" class="effect-download" data-download="sword" data-i18n="downloadWav">DOWNLOAD WAV ↓</button></article>
+        </div>
+      </section>
+      <section class="mix-section" aria-labelledby="mix-title"><div class="section-head"><div><p class="eyebrow" data-i18n="mixEyebrow">03 / THE MIX</p><h2 id="mix-title" data-i18n="mixTitle">Find the right balance.</h2><p data-i18n="mixIntro">Adjust music and effects separately. Your settings stay on this device.</p></div><button id="mute-toggle" class="secondary" type="button" aria-pressed="false" data-i18n="soundOn">SOUND: ON</button></div><div class="mix-grid"><label><span data-i18n="master">MASTER</span><output id="master-value">80%</output><input id="master-volume" type="range" min="0" max="100" value="80" step="5" /></label><label><span data-i18n="musicVolume">MUSIC</span><output id="music-value">60%</output><input id="music-volume" type="range" min="0" max="100" value="60" step="5" /></label><label><span data-i18n="effectVolume">EFFECTS</span><output id="effects-value">80%</output><input id="effects-volume" type="range" min="0" max="100" value="80" step="5" /></label></div></section>
+      <section class="godot-guide" aria-labelledby="godot-guide-title">
+        <div class="section-head"><div><p class="eyebrow" data-i18n="godotEyebrow">04 / PUT IT IN YOUR GAME</p><h2 id="godot-guide-title" data-i18n="godotTitle">Bring the sounds into Godot.</h2><p data-i18n="godotIntro">Use the downloaded files in a local Godot project or your cloud workspace.</p></div></div>
+        <ol class="godot-steps"><li data-i18n="godotStep1">Download the music track and the three WAV effects. Copy them into your project’s assets/audio folder (or upload them using Files in the cloud workspace), then wait for Godot to import them.</li><li data-i18n="godotStep2">Add an AudioStreamPlayer named Music to your main scene. Assign the music file to Stream and enable Autoplay. Enable looping on the imported audio resource if you want continuous music.</li><li data-i18n="godotStep3">Add AudioStreamPlayer children named JumpSound, CoinSound and SwordSound to the node that controls each action. Assign the matching WAV file to each Stream.</li><li data-i18n="godotStep4">In the script that owns each sound player, call its play() method when that action happens. For example, after a successful jump use $JumpSound.play(); call $CoinSound.play() when collecting a coin and $SwordSound.play() when attacking. Adjust node paths if your scene is organised differently.</li><li data-i18n="godotStep5">Run the scene and test all four sounds. Use Godot’s Audio buses and volume controls to balance music against effects.</li></ol>
+      </section>
+      <section class="finish"><div><p class="eyebrow" data-i18n="finishEyebrow">YOUR SOUND ENGINE</p><h2 data-i18n="finishTitle">Ready for the next level?</h2><p id="completion-status" role="status" data-i18n="finishHint">Play the background preview and try all three effects to complete this module.</p></div><button id="complete-module" type="button" disabled data-i18n="complete">COMPLETE MODULE</button></section>
+    </main>
+  </div>
+</body>
+</html>

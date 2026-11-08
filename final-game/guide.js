@@ -242,6 +242,8 @@ func _physics_process(delta: float) -> void:
         jumps_used += 1
     sprite.flip_h = facing < 0
     if attack_now and attack_wait <= 0.0:
+        if Game.has_method("play_sound"):
+            Game.play_sound("attack")
         attack_wait = 0.4
         for target in get_tree().get_nodes_in_group("damageable"):
             var gap = target.global_position - global_position
@@ -285,6 +287,8 @@ func hurt() -> void:
     if hurt_wait > 0.0 or health <= 0:
         return
     health -= 1
+    if Game.has_method("play_sound"):
+        Game.play_sound("hurt")
     hurt_wait = 1.0
     if health <= 0:
         _apply_crouch_visual(false)
@@ -314,6 +318,10 @@ func heal() -> void:
     files:[
       {name:'scripts/Game.gd', code:`extends Node
 
+const AUDIO_SETTINGS_PATH := "user://audio.cfg"
+var sound_enabled := true
+var sound_volume := 0.8
+
 var menu_role := ""
 var menu_room := ""
 var menu_relay := ""
@@ -330,11 +338,85 @@ var achievements: Dictionary = {}
 var records: Array = []
 
 func _ready() -> void:
+    process_mode = Node.PROCESS_MODE_ALWAYS
+    _load_audio_settings()
     if FileAccess.file_exists("user://final_save.json"):
         var data = JSON.parse_string(FileAccess.get_file_as_string("user://final_save.json"))
         if data is Dictionary:
             achievements = data.get("achievements", {})
             records = data.get("records", [])
+
+func _exit_tree() -> void:
+    for child in get_children():
+        if child is AudioStreamPlayer:
+            child.stop()
+            child.stream = null
+
+func _load_audio_settings() -> void:
+    var config := ConfigFile.new()
+    if config.load(AUDIO_SETTINGS_PATH) == OK:
+        sound_enabled = bool(config.get_value("audio", "enabled", true))
+        sound_volume = clampf(float(config.get_value("audio", "volume", 0.8)), 0.0, 1.0)
+    _apply_audio_settings()
+
+func set_sound_enabled(enabled: bool) -> void:
+    sound_enabled = enabled
+    _apply_audio_settings()
+    _save_audio_settings()
+
+func set_sound_volume(volume: float) -> void:
+    sound_volume = clampf(volume, 0.0, 1.0)
+    _apply_audio_settings()
+    _save_audio_settings()
+
+func _apply_audio_settings() -> void:
+    AudioServer.set_bus_volume_linear(0, sound_volume)
+    AudioServer.set_bus_mute(0, not sound_enabled)
+
+func _save_audio_settings() -> void:
+    var config := ConfigFile.new()
+    config.set_value("audio", "enabled", sound_enabled)
+    config.set_value("audio", "volume", sound_volume)
+    var error := config.save(AUDIO_SETTINGS_PATH)
+    if error != OK:
+        push_warning("Could not save audio settings (error %d)." % error)
+
+# Small synthesized cues need no external audio files and use the Master bus.
+func play_sound(kind: String) -> void:
+    if not sound_enabled or sound_volume <= 0.0:
+        return
+    var frequency := 440.0
+    var duration := 0.12
+    match kind:
+        "coin": frequency = 660.0
+        "attack": frequency = 260.0
+        "enemy_hit": frequency = 340.0
+        "hurt": frequency = 185.0
+        "victory":
+            frequency = 520.0
+            duration = 0.28
+        "defeat":
+            frequency = 160.0
+            duration = 0.24
+    var rate := 22050
+    var count := int(rate * duration)
+    var data := PackedByteArray()
+    data.resize(count * 2)
+    for i in range(count):
+        var t := float(i) / float(rate)
+        var envelope := minf(t / 0.01, 1.0) * pow(1.0 - t / duration, 2.0)
+        var wave := sin(TAU * frequency * t) + 0.25 * sin(TAU * frequency * 1.5 * t)
+        data.encode_s16(i * 2, int(clampf(wave * envelope * 0.22, -1.0, 1.0) * 32767.0))
+    var stream := AudioStreamWAV.new()
+    stream.format = AudioStreamWAV.FORMAT_16_BITS
+    stream.mix_rate = rate
+    stream.data = data
+    var player := AudioStreamPlayer.new()
+    player.process_mode = Node.PROCESS_MODE_ALWAYS
+    player.stream = stream
+    player.finished.connect(player.queue_free)
+    add_child(player)
+    player.play()
 
 func start_run() -> void:
     coins = 0
@@ -352,6 +434,7 @@ func next_pickup_name() -> String:
     return "Bonus_%d" % spawn_index
 
 func collect_coin() -> void:
+    play_sound("coin")
     coins += 1
     collected += 1
     score += 10
@@ -585,6 +668,7 @@ func hit(amount: int = 1, attacker_x: float = INF) -> void:
     if defeated or amount <= 0:
         return
     health_points -= amount
+    Game.play_sound("enemy_hit")
     hit_flash_time = 0.24
     knockback_time = 0.20
     var away := signf(global_position.x - attacker_x) if is_finite(attacker_x) else -direction
@@ -633,16 +717,16 @@ func _show_damage_number(amount: int) -> void:
     check:'Each enemy patrols, chases, and deals damage when it reaches a player. Set attack_range larger than the combined collision half-widths: the default is 65 pixels, but adjust it to fit your shapes. Confirm the player hurt animation and health bar change, and that each enemy hit flashes red, recoils away from the attacker and shows the damage number. The boss speeds up after four hits and sets Game.boss_defeated to true. Enemy loot appears after Main joins BonusPickups to the loot_container group in Section 6.'
   },
   {
-    id:'interface',title:'6. Connect the HUD, shop, settings, and local co-op',modules:'8 Game loop · 10 Settings · 14 Marketplace · 15 Achievements · 16 Leaderboard · 17 Local co-op',
+    id:'interface',title:'6. Connect the HUD, shop, settings, and local co-op',modules:'8 Game loop · 10 Settings · 12 Sound · 15 Marketplace · 16 Achievements · 17 Leaderboard · 18 Local co-op',
     summary:'One Main script joins the reusable scenes. A second player can join the same level, and shared rewards persist between runs.',
     steps:[
-      'Under UI add HUD (Control) with Stats, Hint, Story, Achievements, Leaderboard, Player1HealthLabel, Player2HealthLabel (Labels), Player1Health and Player2Health (ProgressBars), and Volume (HSlider). Set both health bars Min to 0, Max to 3, Value to 3 and hide Percentage. Main updates them from each player’s health. Add ShopPanel (Control) with BuyButton, SellButton, SalvageButton. Add ControlsButton, HostButton, JoinButton (Buttons) and RoomCode (LineEdit) for Section 8.',
+      'Under UI add HUD (Control) with Stats, Hint, Story, Achievements, Leaderboard, Player1HealthLabel, Player2HealthLabel (Labels), and Player1Health and Player2Health (ProgressBars). Set both health bars Min to 0, Max to 3, Value to 3 and hide Percentage. Main updates them from each player’s health. Add ShopPanel (Control) with BuyButton, SellButton, SalvageButton. Add ControlsButton, HostButton, JoinButton (Buttons) and RoomCode (LineEdit) for Section 8.',
       'Under UI add a Control named ControlsMenu and attach scripts/ControlsMenu.gd below. The script builds the rows and buttons when the game starts; keep the root hidden in the editor. Each row can remap one keyboard key or gamepad button/axis for P1, P2, or a shared action.',
       'Under UI add Finale (Control). Add these children in this drawing order: Backdrop (ColorRect), Background (Panel), VictoryArt (TextureRect), DefeatIcon, Eyebrow, VictoryTitle, Result, Score, Credits (Labels), then KeepButton, ReturnButton and RestartButton (Buttons). Assign assets/final-game/victory-crest.png to VictoryArt, set Expand Mode to Ignore Size and Stretch Mode to Keep Aspect Centered. Hide Finale by default. Main.gd sizes and styles the full-screen overlay, centers the result card, and sets UI to Always so Escape can resume a paused run.',
       'Under UI add AdventureMenu (Control) and attach scripts/AdventureMenu.gd below. It builds the styled pause and multiplayer menus; keep it hidden in Main. Attach Main.gd below to Main. Also attach the small Online.gd placeholder to Online; replace that file with the full version in Section 8. Shop and Exit each need a CollisionShape2D and Monitoring on. Enter Shop: F or gamepad Y buys a heart for five coins; the panel buys a Forest Blade for eight coins, sells it for four, or salvages it for one material at a two-coin fee.',
       'Create scenes/StartMenu.tscn with a Control root, a UI CanvasLayer, and UI children named AdventureMenu and ControlsMenu. Attach their matching scripts and set StartMenu.tscn as the Project Settings main scene. The same AdventureMenu script provides the in-game pause menu. The multiplayer form opens a new run, displays its room code in the HUD, and accepts a ws:// or wss:// relay reachable by both players.',
       'Press C or gamepad Back to activate Player2. The first pad switches to P2; P1 keeps the keyboard or uses a second pad. Both share coins and score, but each has three hearts. The player collision exceptions in Main.gd let P1 pass through the hidden P2 and keep both players from blocking each other.',
-      'Open Menu or press the pause action, then choose Controls & Gamepad. Adjust Volume in that menu; choose a binding, then press a key, controller button, or move a stick. Escape cancels capture; use Close / Resume or UI Cancel to return. Restore defaults resets bindings. Controls save to user://controls.cfg; records and achievements use user://final_save.json.'
+      'Open Menu or press pause, then choose Controls to remap a key or gamepad input. Escape cancels capture; Back returns to the menu. Choose Sound separately to set master volume, toggle sound on or off and play a test cue. Controls save to user://controls.cfg, audio preferences to user://audio.cfg, and progress to user://final_save.json.'
     ],
     files:[{name:'scripts/ControlsMenu.gd',code:`extends Control
 
@@ -684,102 +768,132 @@ func _ready() -> void:
     _load_settings()
     hide()
 
+func _menu_box(fill: Color, border: Color, radius: int = 10) -> StyleBoxFlat:
+    var box := StyleBoxFlat.new()
+    box.bg_color = fill
+    box.border_color = border
+    box.set_border_width_all(1)
+    box.set_corner_radius_all(radius)
+    return box
+
+func _style_button(button: Button, primary: bool = false) -> void:
+    button.add_theme_font_size_override("font_size", 15)
+    button.add_theme_color_override("font_color", Color("1a2c20") if primary else Color("edf1df"))
+    button.add_theme_color_override("font_focus_color", Color("1a2c20") if primary else Color("edf1df"))
+    button.add_theme_color_override("font_hover_color", Color("1a2c20") if primary else Color.WHITE)
+    button.add_theme_color_override("font_pressed_color", Color("1a2c20") if primary else Color.WHITE)
+    button.add_theme_stylebox_override("normal", _menu_box(Color("e5c86e") if primary else Color("203b30"), Color("e5c86e") if primary else Color("526e5e")))
+    button.add_theme_stylebox_override("hover", _menu_box(Color("f4dc8f") if primary else Color("315a44"), Color("f7e3a0")))
+    button.add_theme_stylebox_override("focus", _menu_box(Color(0, 0, 0, 0), Color("fff1b4")))
+    button.add_theme_stylebox_override("pressed", _menu_box(Color("c6aa5f") if primary else Color("142b23"), Color("f7e3a0")))
+
 func _build_menu() -> void:
-    var dim = ColorRect.new()
-    dim.color = Color(0.02, 0.07, 0.05, 0.92)
+    var dim := ColorRect.new()
+    dim.color = Color(0.015, 0.035, 0.03, 0.88)
     dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     add_child(dim)
-    var panel = PanelContainer.new()
-    panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    panel.offset_left = 145
-    panel.offset_right = -145
-    panel.offset_top = 28
-    panel.offset_bottom = -28
-    var panel_style := StyleBoxFlat.new()
-    panel_style.bg_color = Color("142b23")
-    panel_style.border_color = Color("8f8652")
-    panel_style.set_border_width_all(1)
-    panel_style.set_corner_radius_all(22)
-    panel.add_theme_stylebox_override("panel", panel_style)
+    var panel := PanelContainer.new()
+    panel.set_anchors_preset(Control.PRESET_CENTER)
+    panel.offset_left = -460
+    panel.offset_right = 460
+    panel.offset_top = -325
+    panel.offset_bottom = 325
+    panel.add_theme_stylebox_override("panel", _menu_box(Color("142b23"), Color("8f8652"), 22))
     add_child(panel)
-    var margin = MarginContainer.new()
+    var margin := MarginContainer.new()
     for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-        margin.add_theme_constant_override(side, 18)
+        margin.add_theme_constant_override(side, 26)
     panel.add_child(margin)
-    var column = VBoxContainer.new()
-    column.add_theme_constant_override("separation", 8)
+    var column := VBoxContainer.new()
+    column.add_theme_constant_override("separation", 10)
     margin.add_child(column)
-    var title = Label.new()
+    var eyebrow := Label.new()
+    eyebrow.text = "T H E   S L E E P I N G   G R O V E"
+    eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    eyebrow.add_theme_font_size_override("font_size", 12)
+    eyebrow.add_theme_color_override("font_color", Color("b7c5ad"))
+    column.add_child(eyebrow)
+    var title := Label.new()
     title.text = "CONTROLS & GAMEPAD"
-    title.add_theme_font_size_override("font_size", 26)
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 30)
     title.add_theme_color_override("font_color", Color("f4d98b"))
     column.add_child(title)
-    var help = Label.new()
-    help.text = "Select a binding, then press a key or gamepad button / stick. Esc cancels."
+    var help := Label.new()
+    help.text = "Choose a binding, then press a key, button or stick. Escape cancels."
+    help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    help.add_theme_color_override("font_color", Color("c5d0b5"))
     column.add_child(help)
     status = Label.new()
-    status.text = "Changes save on this device. Pause opens this menu."
+    status.text = "Your controls are saved on this device."
+    status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    status.add_theme_font_size_override("font_size", 13)
+    status.add_theme_color_override("font_color", Color("b7c5ad"))
     status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     column.add_child(status)
-    var heading = HBoxContainer.new()
+    var heading := HBoxContainer.new()
+    heading.add_theme_constant_override("separation", 8)
     column.add_child(heading)
     for heading_text in ["ACTION", "KEYBOARD", "GAMEPAD"]:
-        var header = Label.new()
+        var header := Label.new()
         header.text = heading_text
+        header.add_theme_font_size_override("font_size", 12)
+        header.add_theme_color_override("font_color", Color("c5d0b5"))
         if heading_text == "ACTION":
             header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         else:
-            header.custom_minimum_size.x = 230
+            header.custom_minimum_size.x = 200
             header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
         heading.add_child(header)
-    var scroll = ScrollContainer.new()
+    var scroll := ScrollContainer.new()
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     scroll.follow_focus = true
+    scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     column.add_child(scroll)
-    var rows = VBoxContainer.new()
+    var rows := VBoxContainer.new()
     rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    rows.add_theme_constant_override("separation", 6)
     scroll.add_child(rows)
     for label_text in ACTIONS:
         var action: String = ACTIONS[label_text]
-        var row = HBoxContainer.new()
+        var row := HBoxContainer.new()
+        row.add_theme_constant_override("separation", 8)
         rows.add_child(row)
-        var action_label = Label.new()
+        var action_label := Label.new()
         action_label.text = label_text
         action_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+        action_label.add_theme_font_size_override("font_size", 15)
         row.add_child(action_label)
-        var key = Button.new()
-        key.custom_minimum_size = Vector2(230, 34)
+        var key := Button.new()
+        key.custom_minimum_size = Vector2(200, 40)
+        _style_button(key)
         key.pressed.connect(_begin_capture.bind(action, "keyboard"))
         row.add_child(key)
         key_buttons[action] = key
-        var pad = Button.new()
-        pad.custom_minimum_size = Vector2(230, 34)
+        var pad := Button.new()
+        pad.custom_minimum_size = Vector2(200, 40)
+        _style_button(pad)
         pad.pressed.connect(_begin_capture.bind(action, "gamepad"))
         row.add_child(pad)
         pad_buttons[action] = pad
-    var footer = HBoxContainer.new()
+    var footer := HBoxContainer.new()
+    footer.add_theme_constant_override("separation", 12)
     column.add_child(footer)
-    var volume_label := Label.new()
-    volume_label.text = "Volume"
-    footer.add_child(volume_label)
-    var volume := HSlider.new()
-    volume.custom_minimum_size.x = 120
-    volume.min_value = 0.0
-    volume.max_value = 1.0
-    volume.step = 0.05
-    volume.value = db_to_linear(AudioServer.get_bus_volume_db(0))
-    volume.value_changed.connect(func(value: float): AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001))))
-    footer.add_child(volume)
-    var reset = Button.new()
-    reset.text = "Restore defaults"
+    var reset := Button.new()
+    reset.text = "RESTORE DEFAULTS"
+    reset.custom_minimum_size = Vector2(200, 44)
+    _style_button(reset)
     reset.pressed.connect(_restore_defaults)
     footer.add_child(reset)
-    var spacer = Control.new()
+    var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     footer.add_child(spacer)
     close_button = Button.new()
-    close_button.text = "Close / Resume"
+    close_button.text = "BACK"
+    close_button.custom_minimum_size = Vector2(200, 44)
+    _style_button(close_button, true)
     close_button.pressed.connect(close_menu)
     footer.add_child(close_button)
 
@@ -944,6 +1058,8 @@ var relay_field: LineEdit
 var status: Label
 var is_game := false
 var page := "home"
+var sound_button: Button
+var volume_value: Label
 
 func _ready() -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS
@@ -1020,7 +1136,7 @@ func _clear() -> void:
         content.remove_child(child)
         child.queue_free()
 
-func _button(text: String, action: Callable, primary: bool = false) -> Button:
+func _button(text: String, action: Callable, primary: bool = false, target: Container = null) -> Button:
     var button := Button.new()
     button.text = text
     button.custom_minimum_size.y = 48
@@ -1033,7 +1149,9 @@ func _button(text: String, action: Callable, primary: bool = false) -> Button:
     button.add_theme_stylebox_override("hover", _box(Color("f4dc8f") if primary else Color("315a44"), Color("f7e3a0"), 10))
     button.add_theme_stylebox_override("focus", _box(Color(0, 0, 0, 0), Color("fff1b4"), 10))
     button.pressed.connect(action)
-    content.add_child(button)
+    if target == null:
+        target = content
+    target.add_child(button)
     return button
 
 func _home() -> void:
@@ -1042,9 +1160,16 @@ func _home() -> void:
     heading.text = "PAUSED" if is_game else "THE SLEEPING GROVE"
     var start = _button("RESUME" if is_game else "START ADVENTURE", _resume if is_game else _start_solo, true)
     _button("MULTIPLAYER", _multiplayer)
-    _button("CONTROLS & GAMEPAD", _controls)
-    _button("PROGRESS & SCORES", _progress)
-    _button("QUIT GAME", _quit)
+    var settings_row := HBoxContainer.new()
+    settings_row.add_theme_constant_override("separation", 10)
+    content.add_child(settings_row)
+    _button("CONTROLS", _controls, false, settings_row).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    _button("SOUND", _audio, false, settings_row).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    var extras_row := HBoxContainer.new()
+    extras_row.add_theme_constant_override("separation", 10)
+    content.add_child(extras_row)
+    _button("PROGRESS & SCORES", _progress, false, extras_row).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    _button("QUIT GAME", _quit, false, extras_row).size_flags_horizontal = Control.SIZE_EXPAND_FILL
     start.grab_focus()
 
 func open_menu() -> void:
@@ -1109,6 +1234,65 @@ func _multiplayer() -> void:
     content.add_child(status)
     _button("BACK", _home)
     relay_field.grab_focus()
+
+func _audio() -> void:
+    _clear()
+    page = "audio"
+    heading.text = "SOUND SETTINGS"
+    var description := Label.new()
+    description.text = "Your audio settings are saved on this device."
+    description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    description.add_theme_color_override("font_color", Color("c5d0b5"))
+    content.add_child(description)
+    var row := HBoxContainer.new()
+    row.add_theme_constant_override("separation", 12)
+    content.add_child(row)
+    var title := Label.new()
+    title.text = "MASTER VOLUME"
+    title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    title.add_theme_font_size_override("font_size", 14)
+    title.add_theme_color_override("font_color", Color("c5d0b5"))
+    row.add_child(title)
+    volume_value = Label.new()
+    volume_value.add_theme_font_size_override("font_size", 17)
+    volume_value.add_theme_color_override("font_color", Color("f4d98b"))
+    row.add_child(volume_value)
+    var slider := HSlider.new()
+    slider.name = "VolumeSlider"
+    slider.min_value = 0.0
+    slider.max_value = 100.0
+    slider.step = 5.0
+    slider.value = Game.sound_volume * 100.0
+    slider.custom_minimum_size.y = 36
+    slider.add_theme_stylebox_override("slider", _box(Color("203b30"), Color("526e5e"), 7))
+    slider.add_theme_stylebox_override("grabber_area", _box(Color("e5c86e"), Color("e5c86e"), 7))
+    slider.value_changed.connect(_audio_volume_changed)
+    content.add_child(slider)
+    sound_button = _button("", _toggle_sound)
+    sound_button.name = "SoundToggle"
+    sound_button.toggle_mode = true
+    sound_button.add_theme_stylebox_override("pressed", _box(Color("315a44"), Color("e5c86e"), 10))
+    _button("PLAY TEST SOUND", _test_sound)
+    _button("BACK", _home)
+    _update_audio_state()
+    slider.grab_focus()
+
+func _audio_volume_changed(value: float) -> void:
+    Game.set_sound_volume(value / 100.0)
+    _update_audio_state()
+
+func _toggle_sound() -> void:
+    Game.set_sound_enabled(not Game.sound_enabled)
+    _update_audio_state()
+
+func _update_audio_state() -> void:
+    volume_value.text = "%d%%" % roundi(Game.sound_volume * 100.0)
+    sound_button.text = "SOUND: ON" if Game.sound_enabled else "SOUND: OFF"
+    sound_button.set_pressed_no_signal(Game.sound_enabled)
+    sound_button.tooltip_text = "Turn sound off" if Game.sound_enabled else "Turn sound on"
+
+func _test_sound() -> void:
+    Game.play_sound("coin")
 
 func _progress() -> void:
     _clear()
@@ -1197,11 +1381,6 @@ func _ready() -> void:
     $UI/HUD/ShopPanel.hide()
     exit_area.body_entered.connect(_on_exit)
     $UI/HUD/ControlsButton.pressed.connect($UI/AdventureMenu.open_menu)
-    $UI/HUD/Volume.min_value = 0.0
-    $UI/HUD/Volume.max_value = 1.0
-    $UI/HUD/Volume.step = 0.05
-    $UI/HUD/Volume.value = 1.0
-    $UI/HUD/Volume.value_changed.connect(_volume_changed)
     $UI/Finale/KeepButton.pressed.connect(func(): _choose("keep"))
     $UI/Finale/ReturnButton.pressed.connect(func(): _choose("return"))
     $UI/Finale/RestartButton.pressed.connect(_restart)
@@ -1264,7 +1443,7 @@ func _assign_gamepads() -> void:
         system_pad = first
 
 func _setup_hud() -> void:
-    for node_name in ["Backdrop", "Hint", "Achievements", "Leaderboard", "HostButton", "JoinButton", "RoomCode", "Volume"]:
+    for node_name in ["Backdrop", "Hint", "Achievements", "Leaderboard", "HostButton", "JoinButton", "RoomCode"]:
         get_node("UI/HUD/" + node_name).hide()
     var hud := $UI/HUD
     var plate := Panel.new()
@@ -1447,6 +1626,7 @@ func _on_exit(body) -> void:
 
 func _game_over_after_animation() -> void:
     await get_tree().create_timer(0.9).timeout
+    Game.play_sound("defeat")
     _show_result("Your adventure is not over. Try again!", false)
 
 func _show_result(message: String, choices: bool, passed: bool = false) -> void:
@@ -1471,6 +1651,7 @@ func _show_result(message: String, choices: bool, passed: bool = false) -> void:
     $UI/Finale/RestartButton.grab_focus()
     $UI/Finale/Credits.text = ""
     if passed and not already_celebrating:
+        Game.play_sound("victory")
         art.pivot_offset = art.size / 2.0
         art.scale = Vector2(0.35, 0.35)
         art.rotation = -0.25
@@ -1502,9 +1683,6 @@ func _choose(choice: String) -> void:
     roll.modulate.a = 0.0
     create_tween().tween_property(roll, "modulate:a", 1.0, 1.0)
 
-func _volume_changed(value: float) -> void:
-    AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001)))
-
 func _restart() -> void:
     get_tree().paused = false
     get_tree().reload_current_scene()`},
@@ -1523,7 +1701,7 @@ func join_room(_room_code: String) -> void:
     check:'Open the menu, choose Controls & Gamepad, and change a keyboard key and a gamepad button or stick direction; verify conflicts are rejected, the choices still work after restarting, and Restore defaults works. Close the menu to resume. Join P2 and verify each assigned pad still uses the saved bindings.'
   },
   {
-    id:'ending',title:'7. Complete the story and ending',modules:'4 Storyline · 12 Ending cutscene · 13 Credits · 15 Achievements · 16 Leaderboard',
+    id:'ending',title:'7. Complete the story and ending',modules:'4 Storyline · 13 Ending cutscene · 14 Credits · 16 Achievements · 17 Leaderboard',
     summary:'The level needs a real finish condition, player choice, short cutscene, and credits—not just a boss that disappears.',
     steps:[
       'Give the two enemy types and boss names using Label nodes or artwork. Use the opening menu and your own art to establish the story you wrote in Module 4; short gameplay notices appear only when needed.',
@@ -1534,7 +1712,7 @@ func join_room(_room_code: String) -> void:
     check:'A complete run reaches an ending choice, shows a cutscene/credits, saves an achievement and score, and restarts cleanly.'
   },
   {
-    id:'online',title:'8. Add a two-player online room',modules:'17 Local co-op · 18 Multiplayer',
+    id:'online',title:'8. Add a two-player online room',modules:'18 Local co-op · 19 Multiplayer',
     summary:'Use the same map and P2 controls. The host runs collisions and rewards; a guest sends P2 input and sees snapshots. The Final Game relay is on this site.',
     steps:[
       'Clear the temporary contents of scripts/Online.gd, then rebuild that same file through the writing tasks below. The shown relay_url uses this page’s WebSocket address; for a local HTTP page it uses 127.0.0.1 instead of localhost to avoid IPv6-only connection failures on some Godot setups. If this page uses localhost, replace it with the public site’s WebSocket URL before running Godot in a cloud workspace; localhost inside the cloud editor points to that server, not your Mac.',
@@ -1797,19 +1975,20 @@ func _sync_actor(actor, data: Dictionary) -> void:
     var hp := int(data.get("hp", 1))
     if actor.has_meta("received_health") and hp < actor.health_points:
         actor._show_damage_number(actor.health_points - hp)
+        Game.play_sound("enemy_hit")
     actor.set_meta("received_health", true)
     actor.health_points = hp
     actor._set_hit_flash(bool(data.get("hit_flash", false)))`}],
     check:'Two copies show the same room code. The guest moves P2; both copies see the same positions, coins, enemy defeats, boss status, and final ending.'
   },
   {
-    id:'test',title:'9. Playtest, polish, and submit',modules:'1–18 integrated',
+    id:'test',title:'9. Playtest, polish, and submit',modules:'1–19 integrated',
     summary:'Complete the game as a player would, then keep a copy of the finished Godot project.',
     steps:[
-      'Run from the opening menu to the exit without using the editor. Try Start Adventure, Multiplayer, Controls & Gamepad, and Quit; test solo first, then local co-op and an online room with two running project copies.',
+      'Run from the opening menu to the exit without using the editor. Try Start Adventure, Multiplayer, Controls, Sound, and Quit; test solo first, then local co-op and an online room with two running project copies.',
       'For a desktop game that opens full screen, set Project → Project Settings → Display → Window → Size → Mode to Fullscreen. Keep the 1280 × 720 viewport and canvas_items stretch mode so the game retains its proportions. During editing or in a cloud workspace, you can switch Mode back to Windowed; set Fullscreen again before exporting if you want it at launch.',
       'Check that coins are reachable, both enemy types can be beaten, the shop spends coins, and the boss has two phases. Verify that a living player can finish immediately by reaching the portal, even without coins or enemy defeats.',
-      'Test monster contact damage, the health bars, hurt and death animations, game-over and Play Again, the controls menu, pause and volume, the victory animation and immediate replay, both ending choices, credits, achievements, and leaderboard persistence after restarting.',
+      'Test monster contact damage, the health bars, hurt and death animations, game-over and Play Again, the controls menu, sound on/off and saved volume, the victory animation and immediate replay, both ending choices, credits, achievements, and leaderboard persistence after restarting.',
       'Replace placeholder text and art with your own finished assets. Credit any shared lesson art. Back up your local project folder, or download the current project ZIP before deleting a cloud workspace. Open the backup once to confirm it contains Main.tscn and your scripts.'
     ],
     check:'A fresh playthrough reaches credits without a Debugger error, and your project backup contains the finished level and scripts.'

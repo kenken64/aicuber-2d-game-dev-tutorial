@@ -35,7 +35,7 @@ try {
     await page.route('**/api/modules?learnerId=*', async route => {
       const response = await route.fetch();
       const modules = await response.json();
-      await route.fulfill({ response, json: modules.map(module => module.level <= 19 ? { ...module, completed: true } : module) });
+      await route.fulfill({ response, json: modules.map(module => module.level <= 20 ? { ...module, completed: true } : module) });
     });
     await page.goto(`${baseUrl}/final-game/#player`);
     await page.waitForFunction(() => !document.documentElement.hasAttribute('data-module-gated'));
